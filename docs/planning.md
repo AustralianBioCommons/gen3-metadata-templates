@@ -28,36 +28,96 @@ inherit : `gen3-data-validator.ResolveSchema.get_node_order()`
 
 ```python
 
-class ReadWrite:
-    
-    def read_json_schema
-
-    def check_json_schema_draft
-
-    def write_xlsx
 
 
-class PropertyExtractor(ReadWrite):
+class SchemaLoader:
+    def __init__(self):
+        # Initialize any required state (if needed in the future)
+        pass
 
-    def resolve_schema
-
-    def get_node_order
-
-    def add_pk_fk
-
-    def pull_prop_names
-
-    def pull_data_types
-
-    def pull_descriptions
+    def load(self, schema_path_or_obj):
+        # Returns raw schema object
+        pass
 
 
-class TemplateConstructor(ReadWrite, PropertyExtractor):
+class SchemaResolver:
+    """
+    Abstracted wrapper for Gen3 schema resolution logic.
+    Internally uses gen3-data-validator's ResolveSchema, but exposes a simplified interface.
+    """
+    def __init__(self):
+        try:
+            from gen3_data_validator import ResolveSchema
+        except ImportError:
+            raise ImportError("gen3_data_validator package is required for Gen3SchemaResolver")
+        self._resolver = ResolveSchema()
 
-    def create_node_template
+    def get_node_order(self, schema, node_list=None):
+        """
+        Returns the ordered list of nodes as determined by the schema's graph model.
+        Optionally restricts to a subset of nodes.
+        """
+        return self._resolver.get_node_order(schema, node_list=node_list)
 
-    def construct_excel
+    def resolve_schema(self, raw_schema):
+        """
+        Returns the fully dereferenced schema using the underlying resolver.
+        """
+        return self._resolver.resolve_schema(raw_schema)
 
+
+class NodeGraphBuilder:
+    def __init__(self):
+        # Initialize any required state (if needed in the future)
+        pass
+
+    def build(self, resolved_schema, node_list):
+        # Returns ordered node representation
+        pass
+
+
+class NodePropertyExtractor:
+    def __init__(self):
+        # Initialize any required state (if needed in the future)
+        pass
+
+    def extract_properties(self, node_def):
+        # Returns property metadata
+        pass
+
+
+class ExcelTemplateWriter:
+    def __init__(self):
+        # Initialize any required state (if needed in the future)
+        pass
+
+    def write(self, ordered_nodes_properties, out_path, validation_rules=None):
+        # Creates XLSX file
+        pass
+
+
+class TemplateGeneratorService:
+    def __init__(self):
+        # Set up component dependencies
+        self.schema_loader = SchemaLoader()
+        self.schema_resolver = SchemaResolver()
+        self.node_graph_builder = NodeGraphBuilder()
+        self.property_extractor = NodePropertyExtractor()
+        self.template_writer = ExcelTemplateWriter()
+        self.validation_engine = ValidationRulesEngine()
+
+    def generate(self, schema_path, node_list, out_path):
+        # Orchestrates the above components for end-to-end template generation
+        pass
+
+
+class ValidationRulesEngine:
+    def __init__(self):
+        # Initialize any required state (planned for future expansion)
+        pass
+
+    def get_rules_for_node(self, node_type):
+        pass  # To be implemented in v2.0
 
 
 ```
