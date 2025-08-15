@@ -10,7 +10,7 @@ class NodeProps:
     """Extracts and stores property names, data types, and descriptions from a resolved schema.
 
     This class provides utility methods to access schema property names, data types,
-    and descriptions, including handling nested 'data_file_properties' if present.
+    and descriptions.
     """
 
     def __init__(self, resolved_schema: dict):
@@ -39,26 +39,8 @@ class NodeProps:
         prop_names = list(self.resolved_schema['properties'].keys())
         return prop_names
 
-    def get_data_file_prop_names(self) -> list:
-        """Returns property names under 'data_file_properties' if present.
-
-        Returns:
-            list: List of property names under 'data_file_properties', or None if not present.
-
-        Logs a warning if 'data_file_properties' is not found.
-        """
-        prop_names = self.get_prop_names()
-        if "data_file_properties" in prop_names:
-            return list(self.resolved_schema['properties']['data_file_properties'].keys())
-        logger.warning(
-            f"No data_file_properties found in {self.get_schema_name()}"
-        )
-        return None
-
     def get_prop_info(self, prop_name: str) -> dict:
         """Retrieves the property definition for a given property name.
-
-        Searches both top-level properties and 'data_file_properties' if present.
 
         Args:
             prop_name (str): The name of the property to retrieve.
@@ -69,13 +51,10 @@ class NodeProps:
         Logs a warning if the property is not found.
         """
         prop_names = self.get_prop_names()
-        prop_data_file_names = self.get_data_file_prop_names()
         prop_info = None
 
         if prop_name in prop_names:
             prop_info = self.resolved_schema['properties'][prop_name]
-        elif prop_data_file_names is not None and prop_name in prop_data_file_names:
-            prop_info = self.resolved_schema['properties']['data_file_properties'][prop_name]
         else:
             logger.warning(
                 f"Property '{prop_name}' not found in {self.get_schema_name()}"
@@ -166,4 +145,3 @@ class NodeProps:
             )
 
         return prop_description
-

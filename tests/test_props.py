@@ -66,11 +66,6 @@ def test_get_prop_names(fixture_NodeProps):
     assert nodeprops.get_prop_names() == expected
 
 
-def test_get_data_file_prop_names(fixture_NodeProps):
-    nodeprops = fixture_NodeProps
-    assert nodeprops.get_data_file_prop_names() is None
-
-
 def test_get_prop_info_found(fixture_NodeProps):
     nodeprops = fixture_NodeProps
     expected = {
