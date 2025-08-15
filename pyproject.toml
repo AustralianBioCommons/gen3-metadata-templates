@@ -9,7 +9,7 @@ description = "Create Gen3 Metadata Submission Templates from a Gen3 JSON Schema
 readme = "README.md"
 authors = [{ name = "Joshua Harris", email = "harjo391@gmail.com" }]
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]

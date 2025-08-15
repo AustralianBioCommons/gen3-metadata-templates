@@ -158,9 +158,3 @@ Use pytest. Include tests for:
   - Include pytest under `[tool.poetry.dev-dependencies]`.
 
 ---
-
-### Outcome
-
-Following this plan will produce a modular, maintainable tool with clear separation of concerns, minimal dependencies, and both CLI and API access.
-
-- I reformatted your content into clean Markdown with proper `##`/`###` headings, normalized bullet lists, and fenced the repository tree. You can paste this directly into `docs/planning.md`.
