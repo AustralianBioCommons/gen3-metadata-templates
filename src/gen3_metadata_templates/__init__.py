@@ -1,3 +1,1 @@
-"""Gen3 Metadata Templates package."""
-
-__all__ = []
+from gen3_metadata_templates import *
