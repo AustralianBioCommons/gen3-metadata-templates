@@ -107,26 +107,25 @@ class PropExtractor:
         Logs a warning if the property or its description is not found.
         """
         prop_info = self.get_prop_info(prop_name)
-        if prop_info is None:
+        if not prop_info:
             logger.warning(
                 f"Property '{prop_name}' not found in {self.get_schema_name()}, could not pull description"
             )
             return None
-        prop_description = None
 
-        if "description" in prop_info:
-            prop_description = prop_info['description']
-        if "term" in prop_info:
-            prop_description = prop_info['term']["description"]
+        description = prop_info.get("description")
+        if description is None:
+            term_info = prop_info.get("term", {})
+            description = term_info.get("description")
 
-        if prop_description is None:
+        if description is None:
             logger.warning(
                 f"Property '{prop_name}' has no description key. "
                 "Could be an injected property, usually don't need these in the "
                 f"template | prop_info = {prop_info}"
             )
 
-        return prop_description
+        return description
 
 @dataclass
 class NodeProps:
