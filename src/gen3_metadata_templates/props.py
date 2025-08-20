@@ -1,6 +1,7 @@
 # class to extract and store property, data type, and description
 
 import logging
+from dataclasses import dataclass
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -145,3 +146,8 @@ class NodeProps:
             )
 
         return prop_description
+
+@dataclass
+class NodeInfo:
+    name: str
+    props: NodeProps
