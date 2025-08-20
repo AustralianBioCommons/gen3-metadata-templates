@@ -21,15 +21,17 @@ class PropExtractor:
             resolved_schema (dict): The fully resolved JSON schema for a node.
         """
         self.resolved_schema = resolved_schema
+        self.schema_name = self.resolved_schema.get('title', 'Unknown Schema')
+        self._properties = self.resolved_schema.get('properties', {})
 
-    def get_schema_name(self) -> str:
-        """Returns the schema's title.
+    # def get_schema_name(self) -> str:
+    #     """Returns the schema's title.
 
-        Returns:
-            str: The value of the 'title' field in the schema.
-        """
-        schema_name = self.resolved_schema['title']
-        return schema_name
+    #     Returns:
+    #         str: The value of the 'title' field in the schema.
+    #     """
+    #     schema_name = self.resolved_schema['title']
+    #     return schema_name
 
     def get_prop_names(self) -> list:
         """Returns a list of top-level property names in the schema.
@@ -37,7 +39,7 @@ class PropExtractor:
         Returns:
             list: List of property names defined under 'properties'.
         """
-        prop_names = list(self.resolved_schema['properties'].keys())
+        prop_names = list(self._properties.keys())
         return prop_names
 
     def get_prop_info(self, prop_name: str) -> dict:
@@ -49,19 +51,8 @@ class PropExtractor:
         Returns:
             dict: The property definition dictionary, or None if not found.
 
-        Logs a warning if the property is not found.
         """
-        prop_names = self.get_prop_names()
-        prop_info = None
-
-        if prop_name in prop_names:
-            prop_info = self.resolved_schema['properties'][prop_name]
-        else:
-            logger.warning(
-                f"Property '{prop_name}' not found in {self.get_schema_name()}"
-            )
-
-        return prop_info
+        return self._properties.get(prop_name)
 
     def get_data_type(self, prop_name: str) -> str:
         """Returns the data type of a given property.
@@ -148,6 +139,9 @@ class PropExtractor:
         return prop_description
 
 @dataclass
-class NodeInfo:
-    name: str
-    props: PropExtractor
+class NodeProps:
+    node_name: str
+    prop_name: str
+    data_type: str
+    description: str
+

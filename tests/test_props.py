@@ -35,7 +35,7 @@ def fixture_PropExtractor(fixture_res_schema):
 
 def test_get_schema_name(fixture_PropExtractor):
     nodeprops = fixture_PropExtractor
-    assert nodeprops.get_schema_name() == "Unaligned Reads File"
+    assert nodeprops.schema_name == "Unaligned Reads File"
 
 
 def test_get_prop_names(fixture_PropExtractor):
@@ -81,17 +81,6 @@ def test_get_prop_info_found(fixture_PropExtractor):
     assert nodeprops.get_prop_info('md5sum') == expected
 
 
-def test_get_prop_info_not_found(fixture_PropExtractor, caplog):
-    nodeprops = fixture_PropExtractor
-    # check for not found warning
-    with caplog.at_level("WARNING"):
-        assert nodeprops.get_prop_info('invalid_prop') is None
-        assert any(
-            "Property 'invalid_prop' not found in" in record.message
-            for record in caplog.records
-        )
-
-
 def test_get_data_type(fixture_PropExtractor):
     nodeprops = fixture_PropExtractor
     assert nodeprops.get_data_type('run_id') == "string"
@@ -123,17 +112,6 @@ def test_get_data_type_warn(fixture_PropExtractor, caplog):
         assert any(
             "Property 'state' has no 'type' or 'enum' key. Could be an injected property"
             in record.message
-            for record in caplog.records
-        )
-
-
-def test_get_data_type_not_found(fixture_PropExtractor, caplog):
-    nodeprops = fixture_PropExtractor
-    # check for not found warning
-    with caplog.at_level("WARNING"):
-        assert nodeprops.get_data_type('invalid_prop') is None
-        assert any(
-            "Property 'invalid_prop' not found in" in record.message
             for record in caplog.records
         )
 
