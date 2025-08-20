@@ -10,14 +10,14 @@ pip install gen3_metadata_templates
 
 ```python
 from gen3_validator.resolve_schema import ResolveSchema
-from gen3_metadata_templates.props import NodeProps
+from gen3_metadata_templates.props import PropExtractor
 
 # Creating a bundled resolved gen3 jsonschema
 resolver = ResolveSchema(schema_path="examples/schema/json/acdc_schema.json")
 resolver.resolve_schema()
 
 # initialising node props class
-node_props = NodeProps(resolver.schema_resolved['unaligned_reads_file.yaml'])
+node_props = PropExtractor(resolver.schema_resolved['unaligned_reads_file.yaml'])
 
 # getting schema name
 node_props.get_schema_name()

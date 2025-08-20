@@ -7,7 +7,7 @@ from dataclasses import dataclass
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class NodeProps:
+class PropExtractor:
     """Extracts and stores property names, data types, and descriptions from a resolved schema.
 
     This class provides utility methods to access schema property names, data types,
@@ -15,7 +15,7 @@ class NodeProps:
     """
 
     def __init__(self, resolved_schema: dict):
-        """Initializes NodeProps with a resolved schema dictionary.
+        """Initializes PropExtractor with a resolved schema dictionary.
 
         Args:
             resolved_schema (dict): The fully resolved JSON schema for a node.
@@ -150,4 +150,4 @@ class NodeProps:
 @dataclass
 class NodeInfo:
     name: str
-    props: NodeProps
+    props: PropExtractor
