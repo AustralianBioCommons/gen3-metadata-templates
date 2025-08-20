@@ -68,40 +68,30 @@ class PropExtractor:
         Logs a warning if the property or its type is not found.
         """
         prop_info = self.get_prop_info(prop_name)
-        if prop_info is None:
+        if not prop_info:
             logger.warning(
                 f"Property '{prop_name}' not found in {self.get_schema_name()}, could not pull type"
             )
             return None
-
+        
         if "type" in prop_info and "pattern" in prop_info:
-            prop_type = f"string | pattern = {prop_info['pattern']}"
-        elif "type" in prop_info:
-            prop_type = prop_info["type"]
-        elif "enum" in prop_info:
-            prop_type = "enum"
-        else:
-            logger.warning(
-                f"Property '{prop_name}' has no 'type' or 'enum' key. "
-                f"Could be an injected property, usually don't need "
-                f"these in the template | prop_info = {prop_info}"
-            )
-            return None
+            return f"string | pattern = {prop_info['pattern']}"
+        if "type" in prop_info:
+            return self._format_type_value(prop_info["type"])
+        if "enum" in prop_info:
+            return "enum"
 
-        if not isinstance(prop_type, str):
-            try:
-                joined_types = ", ".join(prop_type)
-                logger.warning(
-                    f"Property type '{prop_type}' is not string, converting to string: {joined_types}"
-                )
-                return joined_types
-            except TypeError:
-                logger.warning(
-                    f"Property type '{prop_type}' is not string and could not be joined."
-                )
-                return str(prop_type)
+        logger.warning(
+            f"Property '{prop_name}' has no 'type' or 'enum' key. "
+            f"Could be an injected property | prop_info = {prop_info}"
+        )
+        return None
 
-        return prop_type
+    def _format_type_value(self, type_value) -> str:
+        """Helper to format a type value which might be a string or list."""
+        if isinstance(type_value, list):
+            return ", ".join(type_value)
+        return str(type_value)
 
     def get_description(self, prop_name: str) -> str:
         """Returns the description for a given property.
