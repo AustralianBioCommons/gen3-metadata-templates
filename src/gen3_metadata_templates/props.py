@@ -18,20 +18,11 @@ class PropExtractor:
         """Initializes PropExtractor with a resolved schema dictionary.
 
         Args:
-            resolved_schema (dict): The fully resolved JSON schema for a node.
+            resolved_schema (dict): The fully resolved gen3 JSON schema for a node.
         """
         self.resolved_schema = resolved_schema
         self.schema_name = self.resolved_schema.get('title', 'Unknown Schema')
         self._properties = self.resolved_schema.get('properties', {})
-
-    # def get_schema_name(self) -> str:
-    #     """Returns the schema's title.
-
-    #     Returns:
-    #         str: The value of the 'title' field in the schema.
-    #     """
-    #     schema_name = self.resolved_schema['title']
-    #     return schema_name
 
     def get_prop_names(self) -> list:
         """Returns a list of top-level property names in the schema.
