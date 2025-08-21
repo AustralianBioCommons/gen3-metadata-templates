@@ -1,1 +1,1 @@
-from gen3_metadata_templates import *
+from gen3_metadata_templates.props import *

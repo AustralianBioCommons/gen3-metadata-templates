@@ -7,6 +7,14 @@ from dataclasses import dataclass
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@dataclass
+class NodeProps:
+    node_name: str
+    prop_name: str
+    data_type: str
+    description: str
+
+
 class PropExtractor:
     """Extracts and stores property names, data types, and descriptions from a resolved schema.
 
@@ -117,11 +125,17 @@ class PropExtractor:
             )
 
         return description
-
-@dataclass
-class NodeProps:
-    node_name: str
-    prop_name: str
-    data_type: str
-    description: str
-
+    
+    def extract_properties(self):
+        """Extracts and returns a list of NodeProps for all properties in the schema."""
+        props = []
+        for prop_name in self.get_prop_names():
+            props.append(
+                NodeProps(
+                    node_name=self.schema_name,
+                    prop_name=prop_name,
+                    data_type=self.get_data_type(prop_name),
+                    description=self.get_description(prop_name),
+                )
+            )
+        return props
