@@ -69,7 +69,7 @@ class PropExtractor:
         prop_info = self.get_prop_info(prop_name)
         if not prop_info:
             logger.warning(
-                f"Property '{prop_name}' not found in {self.get_schema_name()}, could not pull type"
+                f"Property '{prop_name}' not found in {self.schema_name()}, could not pull type"
             )
             return None
         
@@ -108,7 +108,7 @@ class PropExtractor:
         prop_info = self.get_prop_info(prop_name)
         if not prop_info:
             logger.warning(
-                f"Property '{prop_name}' not found in {self.get_schema_name()}, could not pull description"
+                f"Property '{prop_name}' not found in {self.schema_name()}, could not pull description"
             )
             return None
 
