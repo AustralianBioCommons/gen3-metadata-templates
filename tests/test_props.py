@@ -35,7 +35,7 @@ def fixture_PropExtractor(fixture_res_schema):
 
 def test_get_schema_name(fixture_PropExtractor):
     nodeprops = fixture_PropExtractor
-    assert nodeprops.schema_name == "Unaligned Reads File"
+    assert nodeprops.schema_name == "unaligned_reads_file"
 
 
 def test_get_prop_names(fixture_PropExtractor):
