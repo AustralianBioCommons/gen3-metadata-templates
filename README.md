@@ -9,34 +9,17 @@ pip install gen3_metadata_templates
 ## Usage
 
 ```python
+from gen3_metadata_templates.templates import *
 from gen3_validator.resolve_schema import ResolveSchema
-from gen3_metadata_templates.props import PropExtractor
 
-# Creating a bundled resolved gen3 jsonschema
-resolver = ResolveSchema(schema_path="examples/schema/json/acdc_schema.json")
+resolver = ResolveSchema("path/to/gen3_schema.json")
 resolver.resolve_schema()
 
-# initialising node props class
-node_props = PropExtractor(resolver.schema_resolved['unaligned_reads_file.yaml'])
+generate_xlsx_template(resolver=resolver, target_node="unaligned_reads_file", output_filename="unaligned_reads_file.xlsx")
 
-# getting schema name
-node_props.get_schema_name()
 
-# return prop names for the schema
-prop_names = node_props.get_prop_names()
-print(prop_names)
-
-# return the data types for the properties
-types = {}
-for prop_name in prop_names:
-    types[prop_name] = node_props.get_data_type(prop_name)
-print(types)
-
-# return the description for the properties
-descriptions = {}
-for prop_name in prop_names:
-    descriptions[prop_name] = node_props.get_description(prop_name)
-print(descriptions)
+# some columns are excluded by default, but you can return all by using
+generate_xlsx_template(resolver=resolver, target_node="unaligned_reads_file", output_filename="unaligned_reads_file.xlsx", exclude_columns= [])
     
 ```
 
