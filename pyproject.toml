@@ -9,9 +9,11 @@ license = {text = "Apache 2.0"}
 readme = "README.md"
 requires-python = ">=3.9.5"
 dependencies = [
-    "gen3-validator (>=1.0.4,<2.0.0)",
+    "gen3-validator (>=1.1.1,<2.0.0)",
     "pytest (>=8.4.1,<9.0.0)",
-    "logging (>=0.4.9.6,<0.5.0.0)"
+    "logging (>=0.4.9.6,<0.5.0.0)",
+    "xlsxwriter (>=3.2.5,<4.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
 
 
