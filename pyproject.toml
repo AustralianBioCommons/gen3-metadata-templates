@@ -1,6 +1,6 @@
 [project]
-name = "gen3-metadata-templates"
-version = "1.0.0"
+name = "gen3_metadata_templates"
+version = "1.0.1"
 description = "Create Gen3 Metadata Submission Templates from a Gen3 JSON Schema"
 authors = [
     {name = "JoshuaHarris391",email = "harjo391@gmail.com"}
