@@ -64,6 +64,8 @@ def _get_ordered_columns(
     :raises ValueError: If required columns ('prop_name', 'node_name') are missing from df.
     :raises Exception: If node_name cannot be determined from df.
     """
+    if exclude_columns is None:
+        exclude_columns = []
 
     # Check for required columns
     required_cols = {"prop_name", "node_name"}
