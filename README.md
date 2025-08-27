@@ -31,4 +31,5 @@ cd gen3-metadata-templates
 pip install poetry
 poetry install
 eval $(poetry env activate)
+poetry run pytest -vv
 ```
