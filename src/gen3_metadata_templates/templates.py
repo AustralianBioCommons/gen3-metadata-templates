@@ -15,19 +15,6 @@ except ImportError:
     logger.error("pandas is required to export to xlsx")
     raise
 
-def parse_schema(schema_path: str):
-    """
-    Generate a schema resolver object from a schema file.
-
-    :param str schema_path: The path to the schema file.
-
-    :returns: A schema resolver object.
-    :rtype: object
-    """
-    schema_obj = ResolveSchema(schema_path)
-    schema_obj.resolve_schema()
-    return schema_obj
-
 
 def _is_link_array(resolver: object, node: str, prop: str) -> bool:
     """
