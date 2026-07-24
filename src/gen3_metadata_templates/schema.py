@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 from gen3_validator.bulk import extract_links
 from gen3_validator.resolve_schema import ResolveSchema

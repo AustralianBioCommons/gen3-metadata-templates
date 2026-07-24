@@ -19,7 +19,7 @@ from gen3_metadata_templates.constants import (
     DEFAULT_EXCLUDED_NODES,
     PRIMARY_KEY,
 )
-from gen3_metadata_templates.model import NodeTemplate, TemplateSpec, build_template_spec
+from gen3_metadata_templates.model import NodeTemplate, build_template_spec
 from gen3_metadata_templates.paths import Chooser, enumerate_paths, resolve_path
 from gen3_metadata_templates.schema import SchemaBundle
 from gen3_metadata_templates.validation.messages import friendly_message

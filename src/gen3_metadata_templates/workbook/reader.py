@@ -23,7 +23,6 @@ from gen3_metadata_templates.constants import (
     HINT_ROW,
     LIST_SPLIT_CHAR,
     META_SHEET,
-    PRIMARY_KEY,
 )
 from gen3_metadata_templates.model import ColumnKind, ColumnSpec, NodeTemplate, TemplateSpec
 
