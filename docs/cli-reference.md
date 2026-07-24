@@ -11,6 +11,16 @@ g3mt <command> --help
 All commands use these exit codes: `0` success, `1` validation problems, `2`
 usage/input error.
 
+**Global options** (placed before the command):
+
+| Option | Description |
+|---|---|
+| `--debug` | On error, show the full Python traceback instead of a one-line message, and enable verbose (DEBUG) logging from the schema engine. Exit code is unchanged. |
+
+```bash
+g3mt --debug generate schema.json sample -o sample_template.xlsx
+```
+
 Anywhere a `SCHEMA` is expected, you can give either a **local file path** or an
 **`http(s)://` URL** to a Gen3 schema bundle — for example a raw file published
 on GitHub:

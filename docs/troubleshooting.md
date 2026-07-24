@@ -3,6 +3,15 @@
 Common problems and how to resolve them. If your issue isn't here, run the
 command again with `--help`, or open an issue on the project repository.
 
+!!! tip "See the full error"
+    When a message isn't enough to explain a failure, re-run the command with
+    the global `--debug` flag (placed before the command) to get the full
+    traceback and verbose engine logs:
+
+    ```bash
+    g3mt --debug generate schema.json sample
+    ```
+
 ## Generating
 
 ### "Node 'X' does not exist in the schema"

@@ -94,3 +94,29 @@ def test_validate_json_output_is_parseable(mini_schema_path, tmp_path):
     result = runner.invoke(app, ["validate", str(out), "-s", mini_schema_path, "--json"])
     payload = json.loads(result.output)
     assert payload["ok"] is True
+
+
+def test_error_without_debug_is_clean(tmp_path):
+    """By default an input error is a one-line message, not a traceback.
+
+    Non-developers shouldn't be shown a Python stack trace; they get a plain
+    message, exit code 2, and a hint that --debug exists.
+    """
+    missing = str(tmp_path / "nope.json")
+    result = runner.invoke(app, ["nodes", missing])
+    assert result.exit_code == 2
+    assert "Error:" in result.output
+    assert "Traceback" not in result.output
+    assert "--debug" in result.output
+
+
+def test_debug_flag_shows_traceback(tmp_path):
+    """`--debug` swaps the clean message for a full traceback (still exit 2).
+
+    When something goes wrong and the plain message isn't enough, --debug gives
+    a developer the stack trace to diagnose it, without changing the exit code.
+    """
+    missing = str(tmp_path / "nope.json")
+    result = runner.invoke(app, ["--debug", "nodes", missing])
+    assert result.exit_code == 2
+    assert "Traceback" in result.output

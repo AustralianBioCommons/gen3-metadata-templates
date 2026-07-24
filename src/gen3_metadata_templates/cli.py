@@ -10,6 +10,7 @@ Exit codes: 0 = success, 1 = validation problems found, 2 = usage/input error.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -50,6 +51,26 @@ app = typer.Typer(
 
 err_console = Console(stderr=True)
 console = Console()
+
+# Global CLI state set by the top-level callback and read by _handle_errors.
+_state = {"debug": False}
+
+
+@app.callback()
+def _configure(
+    debug: bool = typer.Option(
+        False,
+        "--debug",
+        help="Show full tracebacks on error and enable verbose (DEBUG) logging.",
+    ),
+):
+    """Shared setup that runs before any command."""
+    _state["debug"] = debug
+    # Quiet the underlying engine's chatty INFO logs by default; open them up
+    # (and everything else) when debugging.
+    level = logging.DEBUG if debug else logging.WARNING
+    logging.basicConfig(level=level)
+    logging.getLogger().setLevel(level)
 
 
 def _effective_excluded(
@@ -291,7 +312,12 @@ class _handle_errors:
         if issubclass(exc_type, typer.Exit) or issubclass(exc_type, typer.Abort):
             return False
         if issubclass(exc_type, G3mtError):
+            if _state["debug"]:
+                # Show the full traceback for diagnosis, but keep exit code 2.
+                err_console.print_exception()
+                raise typer.Exit(2)
             err_console.print(f"[red]Error:[/] {exc}")
+            err_console.print("[dim]Re-run with --debug to see the full traceback.[/]")
             raise typer.Exit(2)
         return False
 
