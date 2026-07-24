@@ -20,6 +20,8 @@ from gen3_metadata_templates.model import (
 )
 from gen3_metadata_templates.paths import enumerate_paths, resolve_path
 from gen3_metadata_templates.schema import LinkInfo, SchemaBundle
+from gen3_metadata_templates.validation.report import Finding, ValidationReport
+from gen3_metadata_templates.validation.runner import validate_workbook
 from gen3_metadata_templates.workbook.writer import write_template
 
 __all__ = [
@@ -39,4 +41,7 @@ __all__ = [
     "enumerate_paths",
     "resolve_path",
     "write_template",
+    "validate_workbook",
+    "ValidationReport",
+    "Finding",
 ]
