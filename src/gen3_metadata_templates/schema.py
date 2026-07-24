@@ -10,6 +10,11 @@ module is the only place that has to change.
 
 from __future__ import annotations
 
+import json
+import os
+import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Sequence, Tuple, Union
@@ -18,6 +23,36 @@ from gen3_validator.bulk import extract_links
 from gen3_validator.resolve_schema import ResolveSchema
 
 from gen3_metadata_templates.errors import SchemaError
+
+# How long to wait when downloading a schema from a URL, in seconds.
+_URL_TIMEOUT = 30
+
+
+def _is_url(schema_path: str) -> bool:
+    """True if the schema location is an http(s) URL rather than a local path."""
+    return schema_path.startswith(("http://", "https://"))
+
+
+def _download_schema(url: str) -> bytes:
+    """Fetch a schema bundle from an http(s) URL, validating that it's JSON.
+
+    :raises SchemaError: on any network error, non-200 response, or if the
+        downloaded content isn't valid JSON.
+    """
+    try:
+        with urllib.request.urlopen(url, timeout=_URL_TIMEOUT) as response:  # noqa: S310 - scheme checked above
+            data = response.read()
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        raise SchemaError(f"Could not download schema from '{url}': {exc}") from exc
+
+    try:
+        json.loads(data)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise SchemaError(
+            f"The content at '{url}' is not valid JSON (is it the right link to a "
+            f"Gen3 schema bundle?): {exc}"
+        ) from exc
+    return data
 
 
 @dataclass(frozen=True)
@@ -61,17 +96,51 @@ def _iter_raw_link_members(raw_links: Sequence[dict]):
 
 
 class SchemaBundle:
-    """Loads and resolves a Gen3 schema bundle once, then answers questions about it."""
+    """Loads and resolves a Gen3 schema bundle once, then answers questions about it.
+
+    ``schema_path`` may be a local file path or an ``http(s)://`` URL pointing at
+    a Gen3 schema bundle (e.g. a raw file on GitHub). URLs are downloaded to a
+    temporary file, resolved, and cleaned up.
+    """
 
     def __init__(self, schema_path: Union[str, Path]):
         self.schema_path = str(schema_path)
-        if not Path(self.schema_path).is_file():
-            raise SchemaError(f"Schema file not found: {self.schema_path}")
+        local_path, is_temp = self._materialise(self.schema_path)
         try:
-            self._resolver = ResolveSchema(self.schema_path)
+            self._resolver = ResolveSchema(local_path)
             self._resolver.resolve_schema()
+        except SchemaError:
+            raise
         except Exception as exc:  # noqa: BLE001 - re-raise as our typed error
             raise SchemaError(f"Could not resolve schema '{self.schema_path}': {exc}") from exc
+        finally:
+            if is_temp:
+                try:
+                    os.unlink(local_path)
+                except OSError:
+                    pass
+
+    @staticmethod
+    def _materialise(schema_path: str) -> Tuple[str, bool]:
+        """Return a local file path for the schema, downloading it if it's a URL.
+
+        :returns: ``(local_path, is_temp)`` where ``is_temp`` marks a temporary
+            file the caller should delete once the schema has been read.
+        """
+        if _is_url(schema_path):
+            data = _download_schema(schema_path)
+            handle = tempfile.NamedTemporaryFile(
+                prefix="g3mt_schema_", suffix=".json", delete=False
+            )
+            try:
+                handle.write(data)
+            finally:
+                handle.close()
+            return handle.name, True
+
+        if not Path(schema_path).is_file():
+            raise SchemaError(f"Schema file not found: {schema_path}")
+        return schema_path, False
 
     @staticmethod
     def _strip_yaml(node: str) -> str:

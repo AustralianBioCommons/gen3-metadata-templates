@@ -34,6 +34,15 @@ g3mt generate schema.json sample -o sample_template.xlsx
 g3mt validate sample_template.xlsx --schema schema.json --annotate checked.xlsx
 ```
 
+The schema can be a local file or an `http(s)://` URL — e.g. a bundle published
+on GitHub:
+
+```bash
+g3mt generate \
+  https://raw.githubusercontent.com/AustralianBioCommons/acdc-schema-json/refs/tags/v1.2.0/dictionary/prod_dict/acdc_schema.json \
+  lipidomics_file -o lipidomics_file_template.xlsx
+```
+
 ## Why this exists
 
 Submitting metadata to a Gen3 data commons means producing records that conform
@@ -55,7 +64,7 @@ discovered late, as opaque errors.
 
 | | |
 |---|---|
-| **Input (generate)** | A Gen3 JSON schema bundle (a single `.json` file of node definitions) + the name of the node you want to submit. |
+| **Input (generate)** | A Gen3 JSON schema bundle — a single `.json` file **or an `http(s)://` URL** — plus the name of the node you want to submit. |
 | **Output (generate)** | An `.xlsx` workbook: one sheet per node on the path to your target, with dropdowns, guidance, and reference sheets. |
 | **Input (validate)** | Your filled `.xlsx` workbook + the same schema. |
 | **Output (validate)** | A console report grouped by sheet (and optionally a highlighted copy of the workbook or a JSON report). Exit code `0` = clean, `1` = problems found, `2` = usage error. |

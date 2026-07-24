@@ -9,6 +9,17 @@ take about five minutes.
 - A Gen3 schema bundle — a single `.json` file containing your node definitions.
   Throughout these docs it's called `schema.json`; substitute your own path.
 
+!!! tip "Local file or URL"
+    Anywhere a schema is expected you can pass a **local path** *or* an
+    **`http(s)://` URL** to a published bundle. For example, using the ACDC
+    dictionary straight from GitHub:
+
+    ```bash
+    g3mt nodes https://raw.githubusercontent.com/AustralianBioCommons/acdc-schema-json/refs/tags/v1.2.0/dictionary/prod_dict/acdc_schema.json
+    ```
+
+    Everything below works the same with a URL in place of `schema.json`.
+
 Check the install:
 
 ```bash

@@ -17,6 +17,18 @@ g3mt generate schema.json sample -o sample_template.xlsx
 writes one sheet for each node on the path from the schema's root down to
 `sample`, plus guide sheets.
 
+`SCHEMA` can be a local file **or an `http(s)://` URL** to a published bundle —
+for example a raw file on GitHub:
+
+```bash
+g3mt generate \
+  https://raw.githubusercontent.com/AustralianBioCommons/acdc-schema-json/refs/tags/v1.2.0/dictionary/prod_dict/acdc_schema.json \
+  lipidomics_file -o lipidomics_file_template.xlsx
+```
+
+A URL is downloaded to a temporary file, used, and removed — nothing is left on
+disk. Validate the filled workbook against the same URL later.
+
 ## Choosing a path
 
 A node can be reachable by more than one chain of parents. When it is, the

@@ -98,8 +98,8 @@ def _choose_path(bundle, target, path_arg, excluded) -> List[str]:
 
 @app.command()
 def generate(
-    schema: Path = typer.Argument(
-        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    schema: str = typer.Argument(
+        ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
     ),
     target_node: str = typer.Argument(..., help="The node you want to submit data for."),
     output: Optional[Path] = typer.Option(
@@ -204,13 +204,11 @@ def validate(
     workbook: Path = typer.Argument(
         ..., exists=True, dir_okay=False, help="The filled .xlsx template to check."
     ),
-    schema: Path = typer.Option(
+    schema: str = typer.Option(
         ...,
         "--schema",
         "-s",
-        exists=True,
-        dir_okay=False,
-        help="Path to the Gen3 JSON schema bundle.",
+        help="Path or http(s):// URL to the Gen3 JSON schema bundle.",
     ),
     annotate: Optional[Path] = typer.Option(
         None, "--annotate", help="Write a copy with the problem cells highlighted."
@@ -243,8 +241,8 @@ def validate(
 
 @app.command()
 def nodes(
-    schema: Path = typer.Argument(
-        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    schema: str = typer.Argument(
+        ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
     ),
 ):
     """List the nodes in a schema, with their links."""
@@ -261,8 +259,8 @@ def nodes(
 
 @app.command()
 def paths(
-    schema: Path = typer.Argument(
-        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    schema: str = typer.Argument(
+        ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
     ),
     target_node: str = typer.Argument(..., help="The node to enumerate paths to."),
 ):

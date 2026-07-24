@@ -8,6 +8,8 @@ crashes), and that the parent/child edge list respects node exclusions.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from gen3_metadata_templates.errors import SchemaError
@@ -92,3 +94,73 @@ def test_resolved_unknown_node_raises(mini_bundle):
     """Asking for a node that isn't in the schema is a typed error, not None."""
     with pytest.raises(SchemaError):
         mini_bundle.resolved("no_such_node")
+
+
+class _FakeResponse:
+    """Minimal stand-in for the object urllib.request.urlopen returns."""
+
+    def __init__(self, data: bytes):
+        self._data = data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self) -> bytes:
+        return self._data
+
+
+def test_schema_bundle_loads_from_url(monkeypatch, mini_schema_path):
+    """A schema can be loaded from an http(s) URL, not just a local file.
+
+    Users often point at a schema published on GitHub (a raw file URL) rather
+    than a local copy. The bytes are downloaded, written to a temp file, and
+    resolved exactly as a local file would be. We monkeypatch the download so the
+    test needs no network.
+    """
+    schema_bytes = Path(mini_schema_path).read_bytes()
+
+    def fake_urlopen(url, timeout=None):
+        assert url.startswith("https://")
+        return _FakeResponse(schema_bytes)
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    bundle = SchemaBundle("https://example.com/schema.json")
+    assert "subject" in bundle.node_names
+    assert bundle.schema_path == "https://example.com/schema.json"
+
+
+def test_url_download_failure_raises_schema_error(monkeypatch):
+    """A network/HTTP failure surfaces as our typed SchemaError, not a raw traceback.
+
+    The CLI relies on every expected input problem being a G3mtError so it can
+    exit cleanly (code 2) instead of dumping a stack trace at the user.
+    """
+    import urllib.error
+
+    def boom(url, timeout=None):
+        raise urllib.error.URLError("host unreachable")
+
+    monkeypatch.setattr("urllib.request.urlopen", boom)
+
+    with pytest.raises(SchemaError):
+        SchemaBundle("https://example.com/schema.json")
+
+
+def test_url_with_non_json_content_raises_schema_error(monkeypatch):
+    """If a URL returns something that isn't JSON (e.g. an HTML 404 page), say so.
+
+    Pointing at a GitHub *blob* page instead of the *raw* file is an easy
+    mistake; the error should make clear the content wasn't a JSON schema.
+    """
+
+    def fake_urlopen(url, timeout=None):
+        return _FakeResponse(b"<html>Not Found</html>")
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    with pytest.raises(SchemaError):
+        SchemaBundle("https://example.com/not-a-schema.html")
