@@ -51,7 +51,14 @@ def write_template(
 
     for node_template in spec.nodes:
         _write_node_sheet(
-            workbook, node_template, spec, fmts, data_rows, protect_headers, lists_sheet, lists_state
+            workbook,
+            node_template,
+            spec,
+            fmts,
+            data_rows,
+            protect_headers,
+            lists_sheet,
+            lists_state,
         )
 
     _write_dictionary(workbook, spec, fmts)
@@ -64,16 +71,36 @@ def _build_formats(workbook) -> dict:
     """Create the reusable cell formats once."""
     return {
         "header_required": workbook.add_format(
-            {"bold": True, "font_color": "#FFFFFF", "bg_color": "#1F4E78",
-             "border": 1, "text_wrap": True, "valign": "vcenter", "locked": True}
+            {
+                "bold": True,
+                "font_color": "#FFFFFF",
+                "bg_color": "#1F4E78",
+                "border": 1,
+                "text_wrap": True,
+                "valign": "vcenter",
+                "locked": True,
+            }
         ),
         "header_optional": workbook.add_format(
-            {"bold": True, "font_color": "#1F4E78", "bg_color": "#D6DCE4",
-             "border": 1, "text_wrap": True, "valign": "vcenter", "locked": True}
+            {
+                "bold": True,
+                "font_color": "#1F4E78",
+                "bg_color": "#D6DCE4",
+                "border": 1,
+                "text_wrap": True,
+                "valign": "vcenter",
+                "locked": True,
+            }
         ),
         "hint": workbook.add_format(
-            {"italic": True, "font_size": 9, "font_color": "#606060",
-             "bg_color": "#F2F2F2", "border": 1, "locked": True}
+            {
+                "italic": True,
+                "font_size": 9,
+                "font_color": "#606060",
+                "bg_color": "#F2F2F2",
+                "border": 1,
+                "locked": True,
+            }
         ),
         "data_text": workbook.add_format({"num_format": "@", "locked": False}),
         "data_general": workbook.add_format({"locked": False}),
@@ -124,11 +151,17 @@ def _sheet_for_node(spec: TemplateSpec, node: Optional[str]) -> str:
 
 
 def _write_node_sheet(
-    workbook, node_template: NodeTemplate, spec: TemplateSpec, fmts: dict,
-    data_rows: int, protect_headers: bool, lists_sheet, lists_state: dict,
+    workbook,
+    node_template: NodeTemplate,
+    spec: TemplateSpec,
+    fmts: dict,
+    data_rows: int,
+    protect_headers: bool,
+    lists_sheet,
+    lists_state: dict,
 ) -> None:
     sheet = workbook.add_worksheet(node_template.sheet_name)
-    first_data_row = 2               # 0-indexed row 2 == Excel row 3
+    first_data_row = 2  # 0-indexed row 2 == Excel row 3
     last_data_row = first_data_row + data_rows - 1
 
     for col_idx, col in enumerate(node_template.columns):
@@ -139,11 +172,21 @@ def _write_node_sheet(
 
         # Column width + default (unlocked) data format so submitters can type.
         width = min(max(len(col.header) + 2, 14), 40)
-        data_fmt = fmts["data_general"] if col.data_type in ("integer", "number") else fmts["data_text"]
+        data_fmt = (
+            fmts["data_general"] if col.data_type in ("integer", "number") else fmts["data_text"]
+        )
         sheet.set_column(col_idx, col_idx, width, data_fmt)
 
         _apply_validation(
-            workbook, sheet, col, col_idx, first_data_row, last_data_row, spec, lists_sheet, lists_state
+            workbook,
+            sheet,
+            col,
+            col_idx,
+            first_data_row,
+            last_data_row,
+            spec,
+            lists_sheet,
+            lists_state,
         )
 
     # A workbook-scoped name pointing at this sheet's submitter_id column, so
@@ -161,8 +204,15 @@ def _write_node_sheet(
 
 
 def _apply_validation(
-    workbook, sheet, col: ColumnSpec, col_idx: int, first_row: int, last_row: int,
-    spec: TemplateSpec, lists_sheet, lists_state: dict,
+    workbook,
+    sheet,
+    col: ColumnSpec,
+    col_idx: int,
+    first_row: int,
+    last_row: int,
+    spec: TemplateSpec,
+    lists_sheet,
+    lists_state: dict,
 ) -> None:
     """Attach an Excel dropdown to a column where it makes sense."""
     # Foreign-key column -> pick from the parent sheet's submitter_id column.
@@ -170,23 +220,36 @@ def _apply_validation(
         parent_nt = spec.node_template(col.link_target)
         if parent_nt is not None:
             parent_sheet = parent_nt.sheet_name
-            sheet.data_validation(first_row, col_idx, last_row, col_idx, {
-                "validate": "list",
-                "source": f"={named_range(col.link_target)}",
-                "error_type": "warning",
-                "error_title": "Unknown ID",
-                "error_message": (
-                    f"Pick a submitter_id from the '{parent_sheet}' sheet, or type "
-                    f"it if you will add that row later."
-                ),
-            })
+            sheet.data_validation(
+                first_row,
+                col_idx,
+                last_row,
+                col_idx,
+                {
+                    "validate": "list",
+                    "source": f"={named_range(col.link_target)}",
+                    "error_type": "warning",
+                    "error_title": "Unknown ID",
+                    "error_message": (
+                        f"Pick a submitter_id from the '{parent_sheet}' sheet, or type "
+                        f"it if you will add that row later."
+                    ),
+                },
+            )
         return
 
     # Boolean -> TRUE/FALSE.
     if col.data_type == "boolean":
-        sheet.data_validation(first_row, col_idx, last_row, col_idx, {
-            "validate": "list", "source": ["TRUE", "FALSE"],
-        })
+        sheet.data_validation(
+            first_row,
+            col_idx,
+            last_row,
+            col_idx,
+            {
+                "validate": "list",
+                "source": ["TRUE", "FALSE"],
+            },
+        )
         return
 
     # Enum (single value only) -> dropdown of allowed values.
@@ -196,13 +259,19 @@ def _apply_validation(
             source = list(col.enum)
         else:
             source = _write_enum_list(lists_sheet, lists_state, workbook, col)
-        sheet.data_validation(first_row, col_idx, last_row, col_idx, {
-            "validate": "list",
-            "source": source,
-            "error_type": "stop",
-            "error_title": "Not an allowed value",
-            "error_message": "Choose one of the values from the dropdown.",
-        })
+        sheet.data_validation(
+            first_row,
+            col_idx,
+            last_row,
+            col_idx,
+            {
+                "validate": "list",
+                "source": source,
+                "error_type": "stop",
+                "error_title": "Not an allowed value",
+                "error_message": "Choose one of the values from the dropdown.",
+            },
+        )
 
 
 def _write_enum_list(lists_sheet, lists_state: dict, workbook, col: ColumnSpec) -> str:
@@ -216,9 +285,7 @@ def _write_enum_list(lists_sheet, lists_state: dict, workbook, col: ColumnSpec) 
         lists_sheet.write(row_idx, col_idx, value)
     letter = _col_letter(col_idx)
     name = enum_range(col.prop_name, col.header)
-    workbook.define_name(
-        name, f"='{LISTS_SHEET}'!${letter}$1:${letter}${len(col.enum)}"
-    )
+    workbook.define_name(name, f"='{LISTS_SHEET}'!${letter}$1:${letter}${len(col.enum)}")
     lists_state["col"] += 1
     return f"={name}"
 
@@ -245,27 +312,38 @@ def _write_instructions(workbook, spec: TemplateSpec, fmts: dict) -> None:
         (f"Fill the sheets in this order (parents before children): {order}", fmts["wrap"]),
         ("", fmts["wrap"]),
         ("submitter_id", fmts["subtitle"]),
-        ("On every sheet, 'submitter_id' is your own unique label for each row "
-         "(any text you like, but unique within the sheet).", fmts["wrap"]),
+        (
+            "On every sheet, 'submitter_id' is your own unique label for each row "
+            "(any text you like, but unique within the sheet).",
+            fmts["wrap"],
+        ),
         ("", fmts["wrap"]),
         ("Linking rows to their parent", fmts["subtitle"]),
-        ("A column named like 'subject.submitter_id' links this row to a row on "
-         "the 'subject' sheet. Type (or pick from the dropdown) the submitter_id "
-         "you used on that sheet. To attach several rows to the same parent, "
-         "reuse the same submitter_id — that is how one-to-many relationships "
-         "are expressed.", fmts["wrap"]),
-        (f'To reference more than one parent in a single cell, separate the '
-         f'submitter_ids with "{LIST_SPLIT_CHAR}".', fmts["wrap"]),
+        (
+            "A column named like 'subject.submitter_id' links this row to a row on "
+            "the 'subject' sheet. Type (or pick from the dropdown) the submitter_id "
+            "you used on that sheet. To attach several rows to the same parent, "
+            "reuse the same submitter_id — that is how one-to-many relationships "
+            "are expressed.",
+            fmts["wrap"],
+        ),
+        (
+            f"To reference more than one parent in a single cell, separate the "
+            f'submitter_ids with "{LIST_SPLIT_CHAR}".',
+            fmts["wrap"],
+        ),
         ("", fmts["wrap"]),
         ("Required vs optional", fmts["subtitle"]),
-        ("Dark blue headers are required; light headers are optional. The grey "
-         "hint row under each header tells you the type and whether it is required.",
-         fmts["wrap"]),
+        (
+            "Dark blue headers are required; light headers are optional. The grey "
+            "hint row under each header tells you the type and whether it is required.",
+            fmts["wrap"],
+        ),
         ("", fmts["wrap"]),
         ("Do not edit the header row or the hint row.", fmts["wrap"]),
         ("", fmts["wrap"]),
         ("When you are done, validate your file with:", fmts["subtitle"]),
-        (f"    g3mt validate <this_file>.xlsx --schema <schema.json>", fmts["wrap"]),
+        ("    g3mt validate <this_file>.xlsx --schema <schema.json>", fmts["wrap"]),
     ]
     for row_idx, (text, fmt) in enumerate(lines):
         sheet.write(row_idx, 0, text, fmt)
@@ -273,7 +351,16 @@ def _write_instructions(workbook, spec: TemplateSpec, fmts: dict) -> None:
 
 def _write_dictionary(workbook, spec: TemplateSpec, fmts: dict) -> None:
     sheet = workbook.add_worksheet(DICTIONARY_SHEET)
-    headers = ["Sheet", "Node", "Column", "Type", "Required", "Description", "Allowed values", "Links to"]
+    headers = [
+        "Sheet",
+        "Node",
+        "Column",
+        "Type",
+        "Required",
+        "Description",
+        "Allowed values",
+        "Links to",
+    ]
     widths = [18, 18, 24, 10, 10, 50, 40, 16]
     for col_idx, (head, width) in enumerate(zip(headers, widths)):
         sheet.write(0, col_idx, head, fmts["dict_header"])

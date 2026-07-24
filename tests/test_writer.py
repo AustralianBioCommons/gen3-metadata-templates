@@ -78,9 +78,7 @@ def test_enum_dropdown_lists_allowed_values(sample_workbook):
     wb = openpyxl.load_workbook(path)
     ws = wb["sample"]
     enum_formulas = [
-        dv.formula1
-        for dv in ws.data_validations.dataValidation
-        if "Blood" in str(dv.formula1)
+        dv.formula1 for dv in ws.data_validations.dataValidation if "Blood" in str(dv.formula1)
     ]
     assert enum_formulas, "expected a dropdown containing the sample_type values"
     assert "Tissue" in enum_formulas[0] and "Saliva" in enum_formulas[0]

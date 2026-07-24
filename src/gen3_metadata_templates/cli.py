@@ -52,8 +52,9 @@ err_console = Console(stderr=True)
 console = Console()
 
 
-def _effective_excluded(include_node: List[str], exclude_node: List[str],
-                        no_default_excludes: bool) -> List[str]:
+def _effective_excluded(
+    include_node: List[str], exclude_node: List[str], no_default_excludes: bool
+) -> List[str]:
     excluded = set() if no_default_excludes else set(DEFAULT_EXCLUDED_NODES)
     excluded.difference_update(include_node or [])
     excluded.update(exclude_node or [])
@@ -73,7 +74,7 @@ def _interactive_chooser(paths: List[List[str]]) -> int:
     try:
         idx = int(choice) - 1
     except ValueError:
-        raise typer.BadParameter(f"'{choice}' is not a path number.")
+        raise typer.BadParameter(f"'{choice}' is not a path number.") from None
     if not 0 <= idx < len(paths):
         raise typer.BadParameter(f"Choose a number between 1 and {len(paths)}.")
     return idx
@@ -97,38 +98,67 @@ def _choose_path(bundle, target, path_arg, excluded) -> List[str]:
 
 @app.command()
 def generate(
-    schema: Path = typer.Argument(..., exists=True, dir_okay=False,
-                                  help="Path to the Gen3 JSON schema bundle."),
+    schema: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    ),
     target_node: str = typer.Argument(..., help="The node you want to submit data for."),
     output: Optional[Path] = typer.Option(
-        None, "--output", "-o", rich_help_panel="Output",
-        help="Where to write the .xlsx (default: <target_node>_template.xlsx)."),
+        None,
+        "--output",
+        "-o",
+        rich_help_panel="Output",
+        help="Where to write the .xlsx (default: <target_node>_template.xlsx).",
+    ),
     rows: int = typer.Option(
-        5000, "--rows", rich_help_panel="Output",
-        help="Number of blank data rows to provision per sheet."),
+        5000,
+        "--rows",
+        rich_help_panel="Output",
+        help="Number of blank data rows to provision per sheet.",
+    ),
     force: bool = typer.Option(
-        False, "--force", rich_help_panel="Output",
-        help="Overwrite the output file if it already exists."),
+        False,
+        "--force",
+        rich_help_panel="Output",
+        help="Overwrite the output file if it already exists.",
+    ),
     path: Optional[str] = typer.Option(
-        None, "--path", rich_help_panel="Path selection",
+        None,
+        "--path",
+        rich_help_panel="Path selection",
         help="Choose among multiple paths: a number (e.g. 2) or a node chain "
-             "(e.g. subject,visit,sample)."),
+        "(e.g. subject,visit,sample).",
+    ),
     list_paths: bool = typer.Option(
-        False, "--list-paths", rich_help_panel="Path selection",
-        help="Print the numbered paths to the target node and exit."),
+        False,
+        "--list-paths",
+        rich_help_panel="Path selection",
+        help="Print the numbered paths to the target node and exit.",
+    ),
     include_node: List[str] = typer.Option(
-        [], "--include-node", rich_help_panel="Node & column filters",
-        help="Re-include a node excluded by default (e.g. --include-node project)."),
+        [],
+        "--include-node",
+        rich_help_panel="Node & column filters",
+        help="Re-include a node excluded by default (e.g. --include-node project).",
+    ),
     exclude_node: List[str] = typer.Option(
-        [], "--exclude-node", rich_help_panel="Node & column filters",
-        help="Exclude an extra node from the template."),
+        [],
+        "--exclude-node",
+        rich_help_panel="Node & column filters",
+        help="Exclude an extra node from the template.",
+    ),
     exclude_column: List[str] = typer.Option(
-        [], "--exclude-column", rich_help_panel="Node & column filters",
-        help="Exclude an extra property column from every sheet."),
+        [],
+        "--exclude-column",
+        rich_help_panel="Node & column filters",
+        help="Exclude an extra property column from every sheet.",
+    ),
     no_default_excludes: bool = typer.Option(
-        False, "--no-default-excludes", rich_help_panel="Node & column filters",
+        False,
+        "--no-default-excludes",
+        rich_help_panel="Node & column filters",
         help="Keep the normally-excluded nodes (program, project, "
-             "core_metadata_collection, acknowledgement)."),
+        "core_metadata_collection, acknowledgement).",
+    ),
 ):
     """Generate an Excel template for a target node.
 
@@ -150,15 +180,16 @@ def generate(
         chosen = _choose_path(bundle, target_node, path, excluded)
         columns = list(DEFAULT_EXCLUDED_COLUMNS) + list(exclude_column)
         spec = build_template_spec(
-            bundle, target_node, chosen,
-            excluded_nodes=excluded, excluded_columns=columns,
+            bundle,
+            target_node,
+            chosen,
+            excluded_nodes=excluded,
+            excluded_columns=columns,
         )
 
         out_path = output or Path(f"{target_node}_template.xlsx")
         if out_path.exists() and not force:
-            err_console.print(
-                f"[red]{out_path} already exists.[/] Use --force to overwrite."
-            )
+            err_console.print(f"[red]{out_path} already exists.[/] Use --force to overwrite.")
             raise typer.Exit(2)
 
         write_template(spec, out_path, data_rows=rows)
@@ -170,18 +201,29 @@ def generate(
 
 @app.command()
 def validate(
-    workbook: Path = typer.Argument(..., exists=True, dir_okay=False,
-                                    help="The filled .xlsx template to check."),
-    schema: Path = typer.Option(..., "--schema", "-s", exists=True, dir_okay=False,
-                                help="Path to the Gen3 JSON schema bundle."),
+    workbook: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="The filled .xlsx template to check."
+    ),
+    schema: Path = typer.Option(
+        ...,
+        "--schema",
+        "-s",
+        exists=True,
+        dir_okay=False,
+        help="Path to the Gen3 JSON schema bundle.",
+    ),
     annotate: Optional[Path] = typer.Option(
-        None, "--annotate", help="Write a copy with the problem cells highlighted."),
+        None, "--annotate", help="Write a copy with the problem cells highlighted."
+    ),
     json_out: bool = typer.Option(
-        False, "--json", help="Print the report as JSON instead of tables."),
+        False, "--json", help="Print the report as JSON instead of tables."
+    ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Also show the raw underlying error messages."),
+        False, "--verbose", "-v", help="Also show the raw underlying error messages."
+    ),
     path: Optional[str] = typer.Option(
-        None, "--path", help="Node path, if the workbook has no g3mt metadata."),
+        None, "--path", help="Node path, if the workbook has no g3mt metadata."
+    ),
 ):
     """Validate a filled template and report problems by sheet, row, and column."""
     with _handle_errors():
@@ -201,8 +243,9 @@ def validate(
 
 @app.command()
 def nodes(
-    schema: Path = typer.Argument(..., exists=True, dir_okay=False,
-                                  help="Path to the Gen3 JSON schema bundle."),
+    schema: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    ),
 ):
     """List the nodes in a schema, with their links."""
     with _handle_errors():
@@ -218,14 +261,17 @@ def nodes(
 
 @app.command()
 def paths(
-    schema: Path = typer.Argument(..., exists=True, dir_okay=False,
-                                  help="Path to the Gen3 JSON schema bundle."),
+    schema: Path = typer.Argument(
+        ..., exists=True, dir_okay=False, help="Path to the Gen3 JSON schema bundle."
+    ),
     target_node: str = typer.Argument(..., help="The node to enumerate paths to."),
 ):
     """Show the numbered paths from the root to a target node."""
     with _handle_errors():
         bundle = SchemaBundle(schema)
-        for i, p in enumerate(enumerate_paths(bundle, target_node, DEFAULT_EXCLUDED_NODES), start=1):
+        for i, p in enumerate(
+            enumerate_paths(bundle, target_node, DEFAULT_EXCLUDED_NODES), start=1
+        ):
             console.print(f"{i}. {' -> '.join(p)}")
 
 

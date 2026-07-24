@@ -21,12 +21,17 @@ from gen3_metadata_templates.workbook.reader import coerce_cell, read_meta, read
 
 def _col(data_type="string", kind=ColumnKind.PROPERTY, is_multi=False):
     return ColumnSpec(
-        header="h", prop_name="p", kind=kind, data_type=data_type,
-        required=False, is_multi=is_multi,
+        header="h",
+        prop_name="p",
+        kind=kind,
+        data_type=data_type,
+        required=False,
+        is_multi=is_multi,
     )
 
 
 # --- coerce_cell: the pure coercion rules ---------------------------------
+
 
 def test_integer_float_becomes_int():
     """Excel stores whole numbers as floats; an integer column should read int.
@@ -89,6 +94,7 @@ def test_to_many_link_folds_to_list():
 
 
 # --- read_workbook: records + coordinates on a real workbook --------------
+
 
 @pytest.fixture()
 def filled_workbook(mini_bundle, tmp_path):

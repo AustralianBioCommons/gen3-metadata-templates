@@ -41,8 +41,15 @@ def test_valid_fill_passes(template_path):
     path, schema = template_path
     wb = openpyxl.load_workbook(path)
     _set_row(wb, "subject", 3, submitter_id="subj_1", subject_id="S1", age=42, sex="Male")
-    _set_row(wb, "sample", 3, submitter_id="samp_1",
-             **{"subject.submitter_id": "subj_1"}, sample_id="X1", sample_type="Blood")
+    _set_row(
+        wb,
+        "sample",
+        3,
+        submitter_id="samp_1",
+        **{"subject.submitter_id": "subj_1"},
+        sample_id="X1",
+        sample_type="Blood",
+    )
     wb.save(path)
 
     report = validate_workbook(path, schema)
@@ -64,8 +71,9 @@ def test_broken_fill_reports_each_problem_at_the_right_cell(template_path):
     # Row 4: duplicate submitter_id, non-integer age, invalid enum.
     _set_row(wb, "subject", 4, submitter_id="subj_1", subject_id="S2", age="ten", sex="Alien")
     # Sample row: dangling parent link and a missing required enum (sample_type).
-    _set_row(wb, "sample", 3, submitter_id="samp_1",
-             **{"subject.submitter_id": "ghost"}, sample_id="X1")
+    _set_row(
+        wb, "sample", 3, submitter_id="samp_1", **{"subject.submitter_id": "ghost"}, sample_id="X1"
+    )
     wb.save(path)
 
     report = validate_workbook(path, schema)
@@ -73,12 +81,12 @@ def test_broken_fill_reports_each_problem_at_the_right_cell(template_path):
 
     located = {(f.sheet, f.cell.a1 if f.cell else None): f.validator for f in report.findings}
 
-    assert located.get(("subject", "C4")) == "type"       # age "ten"
-    assert located.get(("subject", "G4")) == "enum"        # sex "Alien"
-    assert located.get(("subject", "A4")) == "duplicate"   # repeated submitter_id
-    assert located.get(("sample", "B3")) == "link"         # dangling subject link
+    assert located.get(("subject", "C4")) == "type"  # age "ten"
+    assert located.get(("subject", "G4")) == "enum"  # sex "Alien"
+    assert located.get(("subject", "A4")) == "duplicate"  # repeated submitter_id
+    assert located.get(("sample", "B3")) == "link"  # dangling subject link
     # Columns: A submitter_id, B subject.submitter_id, C sample_id, D sample_type.
-    assert located.get(("sample", "D3")) == "required"     # empty sample_type
+    assert located.get(("sample", "D3")) == "required"  # empty sample_type
 
 
 def test_annotated_copy_highlights_bad_cells(template_path, tmp_path):
@@ -90,8 +98,15 @@ def test_annotated_copy_highlights_bad_cells(template_path, tmp_path):
     path, schema = template_path
     wb = openpyxl.load_workbook(path)
     _set_row(wb, "subject", 3, submitter_id="subj_1", subject_id="S1", age="oops", sex="Male")
-    _set_row(wb, "sample", 3, submitter_id="samp_1",
-             **{"subject.submitter_id": "subj_1"}, sample_id="X1", sample_type="Blood")
+    _set_row(
+        wb,
+        "sample",
+        3,
+        submitter_id="samp_1",
+        **{"subject.submitter_id": "subj_1"},
+        sample_id="X1",
+        sample_type="Blood",
+    )
     wb.save(path)
 
     report = validate_workbook(path, schema)

@@ -105,9 +105,7 @@ def _match_path_arg(paths: List[List[str]], path_arg: str) -> List[str]:
     if arg.isdigit():
         idx = int(arg) - 1
         if not 0 <= idx < len(paths):
-            raise ValueError(
-                f"--path {arg} is out of range (choose 1..{len(paths)})."
-            )
+            raise ValueError(f"--path {arg} is out of range (choose 1..{len(paths)}).")
         return paths[idx]
 
     # Otherwise treat as a comma-separated node chain and match exactly.

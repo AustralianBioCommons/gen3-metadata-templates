@@ -39,9 +39,7 @@ def validate_workbook(
     """Validate ``workbook_path`` against ``schema_path`` and return a report."""
     bundle = SchemaBundle(schema_path)
 
-    path = _recover_path(
-        bundle, workbook_path, path_arg, chooser, excluded_nodes
-    )
+    path = _recover_path(bundle, workbook_path, path_arg, chooser, excluded_nodes)
     spec = build_template_spec(
         bundle,
         path[-1],
@@ -60,9 +58,7 @@ def validate_workbook(
     return report
 
 
-def _recover_path(
-    bundle, workbook_path, path_arg, chooser, excluded_nodes
-) -> List[str]:
+def _recover_path(bundle, workbook_path, path_arg, chooser, excluded_nodes) -> List[str]:
     """Use the workbook's own metadata to pick the path when possible."""
     meta = read_meta(workbook_path)
     if meta and meta.get("path"):
@@ -92,8 +88,9 @@ def _needs_target():
     )
 
 
-def _validation_schema(bundle: SchemaBundle, node_template: NodeTemplate,
-                       parsed: ParsedWorkbook, excluded_set: set) -> dict:
+def _validation_schema(
+    bundle: SchemaBundle, node_template: NodeTemplate, parsed: ParsedWorkbook, excluded_set: set
+) -> dict:
     """A copy of the resolved schema with 'required' trimmed to fillable columns.
 
     A property is only kept as required if the template has a column for it that
@@ -185,7 +182,7 @@ def _validate_links(bundle, node_template, spec, parsed, report, excluded_set) -
         for error in validate_record_links(record, idx, node, links, index, warned):
             report.findings.append(_to_finding(error, node_template, parsed))
 
-    for _, name, target in warned:
+    for _, _name, target in warned:
         report.warnings.append(
             f"Node '{node}' links to '{target}', which has no rows to check against."
         )

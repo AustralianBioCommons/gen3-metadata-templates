@@ -111,8 +111,8 @@ returns a `ValidationReport`.
 from gen3_metadata_templates.validation.report import to_json, render_console
 from rich.console import Console
 
-data = to_json(report)                 # plain dict, JSON-serialisable
-render_console(report, Console())      # the same tables the CLI prints
+data = to_json(report)  # plain dict, JSON-serialisable
+render_console(report, Console())  # the same tables the CLI prints
 ```
 
 ## Annotate a workbook
@@ -150,8 +150,8 @@ except G3mtError as exc:
 ```python
 bundle = SchemaBundle("schema.json")
 
-bundle.node_names            # sorted list of node ids
-bundle.links("sample")       # list of LinkInfo(name, target_type, multiplicity, required)
+bundle.node_names  # sorted list of node ids
+bundle.links("sample")  # list of LinkInfo(name, target_type, multiplicity, required)
 bundle.required_props("sample")
-bundle.resolved("sample")    # the fully ref-resolved node schema dict
+bundle.resolved("sample")  # the fully ref-resolved node schema dict
 ```

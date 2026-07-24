@@ -36,15 +36,15 @@ DEFAULT_EXCLUDED_COLUMNS = (
 DEFAULT_DATA_ROWS = 5000
 
 # Row layout inside every node sheet (1-indexed, matching Excel/openpyxl).
-HEADER_ROW = 1       # column headers
-HINT_ROW = 2         # type + required/optional hint, locked
-FIRST_DATA_ROW = 3   # first row a submitter types into
+HEADER_ROW = 1  # column headers
+HINT_ROW = 2  # type + required/optional hint, locked
+FIRST_DATA_ROW = 3  # first row a submitter types into
 
 # Reserved sheet names.
 INSTRUCTIONS_SHEET = "Instructions"
 DICTIONARY_SHEET = "Dictionary"
-META_SHEET = "_g3mt"       # hidden machine-readable metadata
-LISTS_SHEET = "_lists"     # hidden backing store for long enum dropdowns
+META_SHEET = "_g3mt"  # hidden machine-readable metadata
+LISTS_SHEET = "_lists"  # hidden backing store for long enum dropdowns
 
 # Excel caps a worksheet name at 31 characters.
 MAX_SHEET_NAME_LEN = 31
