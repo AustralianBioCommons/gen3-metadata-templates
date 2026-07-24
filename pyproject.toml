@@ -16,6 +16,9 @@ dependencies = [
     "rich (>=13.0.0,<15.0.0)"
 ]
 
+[project.scripts]
+g3mt = "gen3_metadata_templates.cli:app"
+
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.4.1,<9.0.0"
 
