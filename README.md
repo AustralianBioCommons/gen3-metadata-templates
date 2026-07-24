@@ -1,97 +1,81 @@
 # gen3-metadata-templates
 
-Generate friendly Excel submission templates from a Gen3 schema, then validate
-the filled-in workbooks — with every error pinned to the exact sheet, row, and
+Turn a Gen3 schema into friendly Excel submission templates, then validate the
+filled-in workbooks — with every error pinned to the exact sheet, row, and
 column, in plain English.
-
-The tool is built for people who need to submit metadata that fits a Gen3 data
-model but aren't expected to know linked-data theory. Generated workbooks use
-dropdowns for controlled values and for parent links, so most mistakes can't be
-made in the first place; the ones that slip through are caught on validation and
-explained clearly.
-
-## Install
 
 ```bash
 pipx install gen3-metadata-templates      # installs the `g3mt` command
-```
 
-(or `pip install gen3-metadata-templates` into an environment of your choice.)
-
-## Quickstart
-
-```bash
-# 1. Generate a template for the node you want to submit (e.g. "sample")
 g3mt generate schema.json sample -o sample_template.xlsx
-
-# 2. Open sample_template.xlsx, read the Instructions sheet, and fill it in.
-
-# 3. Validate your filled file
+# ...fill sample_template.xlsx in Excel...
 g3mt validate sample_template.xlsx --schema schema.json --annotate checked.xlsx
 ```
 
-`validate` prints a report grouped by sheet and exits `0` if the file is clean,
-`1` if there are problems to fix. With `--annotate`, it also writes a copy of
-your workbook with the problem cells highlighted and commented.
+## Why this exists
 
-## What's in a generated template
+Submitting metadata to a Gen3 data commons means producing records that conform
+to a graph-shaped data model: nodes (subject, sample, file, …) linked
+parent-to-child, each with typed, sometimes-controlled properties. That is hard
+for people who aren't fluent in linked data — and mistakes are usually only
+discovered late, as opaque errors.
 
-- **One sheet per node**, ordered so you fill parents before children.
-- **`submitter_id`** on every sheet is your own unique label for each row.
-- **Link columns** like `subject.submitter_id` connect a row to a row on the
-  `subject` sheet — pick the parent from the dropdown. Reusing the same
-  parent `submitter_id` on several child rows is how one-to-many relationships
-  are expressed. To reference more than one parent in a single cell, separate
-  the values with `;`.
-- **Dropdowns** for controlled (enum) values and TRUE/FALSE fields.
-- **Required columns** have dark headers; optional ones are light. The grey hint
-  row under each header shows the type and whether it's required.
-- An **Instructions** sheet (how it all works) and a **Dictionary** sheet
-  (every column's type, description, and allowed values).
+`g3mt` closes that gap from both ends:
 
-## Choosing a path
+- **Generation** produces a workbook a non-specialist can fill in confidently —
+  parent links and controlled values are **dropdowns**, so most errors can't be
+  made in the first place.
+- **Validation** catches whatever still slips through and reports it as
+  *"Sheet subject, cell C4: 'ten' isn't a whole number"* rather than a stack
+  trace.
 
-A node can be reachable by more than one chain of parents. When that happens,
-`generate` shows the options and asks you to choose (or pass `--path`):
+## Input and output
 
-```bash
-g3mt paths schema.json sample          # list the numbered paths
-g3mt generate schema.json sample --path 2
-g3mt generate schema.json sample --path subject,visit,sample
-```
-
-By default `program`, `project`, `core_metadata_collection`, and
-`acknowledgement` are left out of templates (they're usually not submitted by
-hand). Re-include any of them with `--include-node`, or drop more with
-`--exclude-node` / `--exclude-column`.
-
-## Command reference
-
-| Command | What it does |
+| | |
 |---|---|
-| `g3mt generate SCHEMA TARGET_NODE` | Write an Excel template for a node. |
-| `g3mt validate WORKBOOK -s SCHEMA` | Check a filled template; `--annotate`, `--json`, `--verbose`. |
-| `g3mt nodes SCHEMA` | List the schema's nodes and their links. |
-| `g3mt paths SCHEMA TARGET_NODE` | Show the numbered paths to a node. |
+| **Input (generate)** | A Gen3 JSON schema bundle (a single `.json` file of node definitions) + the name of the node you want to submit. |
+| **Output (generate)** | An `.xlsx` workbook: one sheet per node on the path to your target, with dropdowns, guidance, and reference sheets. |
+| **Input (validate)** | Your filled `.xlsx` workbook + the same schema. |
+| **Output (validate)** | A console report grouped by sheet (and optionally a highlighted copy of the workbook or a JSON report). Exit code `0` = clean, `1` = problems found, `2` = usage error. |
 
-Run any command with `--help` for the full options.
+## Key features
 
-## Using it as a library
+- **One sheet per node, in fill order** — parents before children, so links
+  always resolve.
+- **Cross-sheet link dropdowns** — a `subject.submitter_id` column on the sample
+  sheet is a dropdown of the IDs you entered on the subject sheet. Reusing a
+  parent ID across child rows is all "one-to-many" requires — no theory needed.
+- **Controlled-value dropdowns** — enum and boolean fields become dropdowns.
+- **Self-documenting workbooks** — required vs optional headers, a type/required
+  hint row, per-column description comments, plus an **Instructions** sheet and a
+  full **Dictionary** sheet.
+- **Path selection** — when a node is reachable by more than one chain of
+  parents, you choose which one the template covers.
+- **Precise, plain-English validation** — errors located to the cell, rephrased
+  for non-developers, with an optional highlighted copy of your file.
+- **Use it as a CLI or a Python library** — the CLI is a thin shell over an
+  importable core.
 
-The CLI is a thin shell; everything is importable.
+## Documentation
 
-```python
-from gen3_metadata_templates import (
-    SchemaBundle, build_template_spec, write_template, validate_workbook,
-)
+- **[Quickstart](docs/quickstart.md)** — the shortest path from a schema to a
+  validated workbook.
+- **[Concepts](docs/concepts.md)** — nodes, links, paths, and `submitter_id`, for
+  readers new to Gen3.
+- **[Generating templates](docs/generating-templates.md)** — path selection,
+  node/column filtering, and what every part of the workbook means.
+- **[Filling in a template](docs/filling-templates.md)** — how linking,
+  one-to-many, and multi-value cells work.
+- **[Validating](docs/validating.md)** — the error types, the annotated copy,
+  and exit codes.
+- **[CLI reference](docs/cli-reference.md)** — every command and flag.
+- **[Library API](docs/library-api.md)** — using the core from Python.
+- **[Troubleshooting](docs/troubleshooting.md)** — common problems and fixes.
 
-bundle = SchemaBundle("schema.json")
-spec = build_template_spec(bundle, "sample", ["subject", "sample"])
-write_template(spec, "sample_template.xlsx")
+## Requirements
 
-report = validate_workbook("sample_template.xlsx", "schema.json")
-print(report.ok, [f"{f.location}: {f.message}" for f in report.findings])
-```
+- Python ≥ 3.9.5
+- `gen3-validator` ≥ 2.1 (installed automatically)
 
 ## Development
 
@@ -103,8 +87,19 @@ poetry install
 poetry run pytest -vv
 ```
 
-## Note on 2.0
+To preview the documentation site locally:
 
-Version 2.0 is a full rewrite. The old Python API (`generate_xlsx_template`,
-`make_node_template_pd`, `PropExtractor`) has been replaced by the library and
-`g3mt` CLI described above. It requires `gen3-validator >= 2.1`.
+```bash
+poetry install --with docs
+poetry run mkdocs serve      # then open http://127.0.0.1:8000
+```
+
+## A note on 2.0
+
+Version 2.0 is a full rewrite. The old Python API
+(`generate_xlsx_template`, `make_node_template_pd`, `PropExtractor`) has been
+replaced by the library and `g3mt` CLI documented here.
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE).
