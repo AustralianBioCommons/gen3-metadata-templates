@@ -1,0 +1,277 @@
+{
+  "_settings.yaml": {
+    "_dict_version": "0.1.0",
+    "_dict_commit": null
+  },
+  "_terms.yaml": {"id": "_terms"},
+  "_definitions.yaml": {
+    "id": "_definitions",
+    "UUID": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "datetime": {
+      "oneOf": [
+        {"type": "string", "format": "date-time"},
+        {"type": "null"}
+      ]
+    },
+    "state": {
+      "default": "validated",
+      "enum": ["uploading", "validated", "submitted", "released"]
+    },
+    "project_id": {"type": "string"},
+    "foreign_key": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": {"$ref": "#/UUID"},
+        "submitter_id": {"type": "string"}
+      }
+    },
+    "to_one": {
+      "anyOf": [
+        {"type": "array", "items": {"$ref": "#/foreign_key", "minItems": 1, "maxItems": 1}},
+        {"$ref": "#/foreign_key"}
+      ]
+    },
+    "to_many": {
+      "anyOf": [
+        {"type": "array", "items": {"$ref": "#/foreign_key", "minItems": 1}},
+        {"$ref": "#/foreign_key"}
+      ]
+    },
+    "ubiquitous_properties": {
+      "type": {"type": "string"},
+      "id": {"$ref": "#/UUID", "systemAlias": "node_id"},
+      "submitter_id": {
+        "type": ["string"],
+        "description": "A project-specific identifier for a node. Used as the nickname/alias for a unit of submission."
+      },
+      "state": {"$ref": "#/state"},
+      "project_id": {"$ref": "#/project_id"},
+      "created_datetime": {"$ref": "#/datetime"},
+      "updated_datetime": {"$ref": "#/datetime"}
+    }
+  },
+  "program.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "program",
+    "title": "program",
+    "type": "object",
+    "category": "administrative",
+    "description": "A broad administrative container for projects.",
+    "submittable": true,
+    "required": ["name", "submitter_id", "type"],
+    "links": [],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "name": {"type": "string", "description": "The name of the program."}
+    },
+    "additionalProperties": false
+  },
+  "project.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "project",
+    "title": "project",
+    "type": "object",
+    "category": "administrative",
+    "description": "A defined piece of work with its own metadata.",
+    "submittable": true,
+    "required": ["code", "submitter_id", "type", "programs"],
+    "links": [
+      {
+        "name": "programs",
+        "backref": "projects",
+        "label": "member_of",
+        "target_type": "program",
+        "multiplicity": "many_to_one",
+        "required": true
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "code": {"type": "string", "description": "A unique short code for the project."},
+      "programs": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  },
+  "subject.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "subject",
+    "title": "subject",
+    "type": "object",
+    "category": "administrative",
+    "description": "A person participating in the study.",
+    "submittable": true,
+    "required": ["subject_id", "submitter_id", "type", "projects"],
+    "links": [
+      {
+        "name": "projects",
+        "backref": "subjects",
+        "label": "member_of",
+        "target_type": "project",
+        "multiplicity": "many_to_one",
+        "required": true
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "subject_id": {"type": "string", "description": "A deidentified identifier for the subject."},
+      "sex": {
+        "description": "The biological sex of the subject.",
+        "enum": ["Male", "Female", "Unknown"]
+      },
+      "age": {"type": "integer", "description": "Age in whole years at enrolment."},
+      "consent_code": {
+        "type": "string",
+        "pattern": "^C[0-9]{3}$",
+        "description": "Consent code in the form Cnnn, e.g. C001."
+      },
+      "aliases": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Other identifiers this subject is known by."
+      },
+      "projects": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  },
+  "visit.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "visit",
+    "title": "visit",
+    "type": "object",
+    "category": "clinical",
+    "description": "A single clinical visit for a subject.",
+    "submittable": true,
+    "required": ["visit_id", "submitter_id", "type", "subjects"],
+    "links": [
+      {
+        "name": "subjects",
+        "backref": "visits",
+        "label": "part_of",
+        "target_type": "subject",
+        "multiplicity": "many_to_one",
+        "required": true
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "visit_id": {"type": "string", "description": "Identifier for the visit."},
+      "visit_day": {"type": "integer", "description": "Study day the visit occurred on."},
+      "subjects": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  },
+  "sample.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "sample",
+    "title": "sample",
+    "type": "object",
+    "category": "biospecimen",
+    "description": "A biological sample, collected either directly from a subject or at a visit.",
+    "submittable": true,
+    "required": ["sample_id", "sample_type", "submitter_id", "type", "subjects"],
+    "links": [
+      {
+        "name": "subjects",
+        "backref": "samples",
+        "label": "derived_from",
+        "target_type": "subject",
+        "multiplicity": "many_to_one",
+        "required": false
+      },
+      {
+        "name": "visits",
+        "backref": "samples",
+        "label": "collected_at",
+        "target_type": "visit",
+        "multiplicity": "many_to_one",
+        "required": false
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "sample_id": {"type": "string", "description": "Identifier for the sample."},
+      "sample_type": {
+        "description": "The kind of biological material.",
+        "enum": ["Blood", "Tissue", "Saliva"]
+      },
+      "subjects": {"$ref": "_definitions.yaml#/to_one"},
+      "visits": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  },
+  "assay_file.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "assay_file",
+    "title": "assay_file",
+    "type": "object",
+    "category": "data_file",
+    "description": "A data file produced from a sample.",
+    "submittable": true,
+    "required": ["file_name", "submitter_id", "type"],
+    "links": [
+      {
+        "exclusive": false,
+        "required": true,
+        "subgroup": [
+          {
+            "name": "samples",
+            "backref": "assay_files",
+            "label": "derived_from",
+            "target_type": "sample",
+            "multiplicity": "many_to_one",
+            "required": true
+          },
+          {
+            "name": "core_metadata_collections",
+            "backref": "assay_files",
+            "label": "data_from",
+            "target_type": "core_metadata_collection",
+            "multiplicity": "many_to_one",
+            "required": false
+          }
+        ]
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "file_name": {"type": "string", "description": "The name of the data file."},
+      "data_format": {
+        "description": "The file format.",
+        "enum": ["BAM", "FASTQ", "VCF"]
+      },
+      "samples": {"$ref": "_definitions.yaml#/to_one"},
+      "core_metadata_collections": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  },
+  "core_metadata_collection.yaml": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "core_metadata_collection",
+    "title": "core_metadata_collection",
+    "type": "object",
+    "category": "administrative",
+    "description": "Core metadata shared by data files.",
+    "submittable": true,
+    "required": ["submitter_id", "type", "projects"],
+    "links": [
+      {
+        "name": "projects",
+        "backref": "core_metadata_collections",
+        "label": "member_of",
+        "target_type": "project",
+        "multiplicity": "many_to_one",
+        "required": true
+      }
+    ],
+    "properties": {
+      "$ref": "_definitions.yaml#/ubiquitous_properties",
+      "title": {"type": "string", "description": "A title for the collection."},
+      "projects": {"$ref": "_definitions.yaml#/to_one"}
+    },
+    "additionalProperties": false
+  }
+}
