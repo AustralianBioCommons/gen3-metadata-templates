@@ -120,6 +120,15 @@ a virtual environment, activate that environment first.
 
 ### Schema won't load
 
-The schema must be a single JSON file containing the node definitions (a Gen3
-schema bundle). A folder of individual YAML files, or a URL, is not read
-directly — export/convert it to one JSON bundle first.
+The schema must be a single JSON **bundle** — one file (or one URL) containing
+all the node definitions. A folder of individual YAML files is not read directly;
+export/convert it to one JSON bundle first.
+
+### Loading a schema from a URL fails
+
+You can pass an `http(s)://` URL instead of a local path, but it must point at
+the **raw JSON** of the bundle. A common mistake is linking a GitHub *blob* page
+(the HTML view) instead of the raw file — the tool reports that the content
+"is not valid JSON". Use the `raw.githubusercontent.com` URL (or click **Raw**
+on GitHub and copy that link). Other causes: no network access, or a private
+repository the request isn't authorised to read.

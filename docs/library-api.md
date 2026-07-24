@@ -40,6 +40,16 @@ spec = build_template_spec(bundle, "sample", ["subject", "sample"])
 write_template(spec, "sample_template.xlsx")
 ```
 
+`SchemaBundle` accepts a local path **or an `http(s)://` URL**; a URL is
+downloaded to a temporary file, resolved, and cleaned up automatically:
+
+```python
+bundle = SchemaBundle(
+    "https://raw.githubusercontent.com/AustralianBioCommons/"
+    "acdc-schema-json/refs/tags/v1.2.0/dictionary/prod_dict/acdc_schema.json"
+)
+```
+
 `build_template_spec(bundle, target_node, path, *, excluded_nodes=..., excluded_columns=...)`
 returns a `TemplateSpec`. The `path` is the chosen node path from root to target
 — you can build it yourself, or discover it with the path helpers below.

@@ -11,6 +11,16 @@ g3mt <command> --help
 All commands use these exit codes: `0` success, `1` validation problems, `2`
 usage/input error.
 
+Anywhere a `SCHEMA` is expected, you can give either a **local file path** or an
+**`http(s)://` URL** to a Gen3 schema bundle — for example a raw file published
+on GitHub:
+
+```bash
+g3mt nodes https://raw.githubusercontent.com/AustralianBioCommons/acdc-schema-json/refs/tags/v1.2.0/dictionary/prod_dict/acdc_schema.json
+```
+
+A URL is downloaded, used, and discarded; nothing is left on disk.
+
 ---
 
 ## `g3mt generate`
@@ -25,7 +35,7 @@ g3mt generate SCHEMA TARGET_NODE [options]
 
 | Argument | Description |
 |---|---|
-| `SCHEMA` | Path to the Gen3 JSON schema bundle. |
+| `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
 | `TARGET_NODE` | The node you want to submit data for. |
 
 **Output options**
@@ -81,7 +91,7 @@ g3mt validate WORKBOOK --schema SCHEMA [options]
 
 | Option | Description |
 |---|---|
-| `-s, --schema FILE` | Path to the Gen3 JSON schema bundle. **Required.** |
+| `-s, --schema SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. **Required.** |
 | `--annotate PATH` | Write a copy of the workbook with problem cells highlighted. |
 | `--json` | Print the report as JSON instead of tables. |
 | `-v, --verbose` | Also show the raw underlying error messages. |
@@ -109,7 +119,7 @@ g3mt nodes SCHEMA
 
 | Argument | Description |
 |---|---|
-| `SCHEMA` | Path to the Gen3 JSON schema bundle. |
+| `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
 
 ---
 
@@ -126,7 +136,7 @@ g3mt paths SCHEMA TARGET_NODE
 
 | Argument | Description |
 |---|---|
-| `SCHEMA` | Path to the Gen3 JSON schema bundle. |
+| `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
 | `TARGET_NODE` | The node to enumerate paths to. |
 
 ---
