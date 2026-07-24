@@ -8,7 +8,7 @@ what the writer produced without relying on stored metadata.
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Sequence
+from typing import Dict, Sequence
 
 from gen3_metadata_templates.constants import MAX_SHEET_NAME_LEN, PRIMARY_KEY
 from gen3_metadata_templates.schema import LinkInfo
