@@ -1,5 +1,9 @@
 # gen3-metadata-templates
 
+[![CI](https://github.com/AustralianBioCommons/gen3-metadata-templates/actions/workflows/build.yml/badge.svg)](https://github.com/AustralianBioCommons/gen3-metadata-templates/actions/workflows/build.yml)
+[![PyPI version](https://img.shields.io/pypi/v/gen3-metadata-templates.svg)](https://pypi.org/project/gen3-metadata-templates/)
+[![Python versions](https://img.shields.io/pypi/pyversions/gen3-metadata-templates.svg)](https://pypi.org/project/gen3-metadata-templates/)
+
 Turn a Gen3 schema into friendly Excel submission templates, then validate the
 filled-in workbooks — with every error pinned to the exact sheet, row, and
 column, in plain English.
@@ -87,11 +91,40 @@ poetry install
 poetry run pytest -vv
 ```
 
+Before pushing, run the same checks CI does:
+
+```bash
+poetry run ruff check .          # lint
+poetry run ruff format --check . # formatting
+poetry run pytest -vv            # tests
+```
+
 To preview the documentation site locally:
 
 ```bash
 poetry install --with docs
 poetry run mkdocs serve      # then open http://127.0.0.1:8000
+```
+
+## Continuous integration & releases
+
+- **CI** (`.github/workflows/build.yml`) runs on every push and pull request to
+  `main`: Ruff lint + format check, the test suite on Python 3.9–3.12, a
+  `g3mt --help` smoke test, and a strict docs build.
+- **Publishing** (`.github/workflows/publish_pypi.yml`) runs when a GitHub
+  Release is published: it verifies the release tag matches the package version,
+  then builds and publishes to PyPI. It needs a `PYPI_API_KEY` repository secret.
+- **TestPyPI** (`.github/workflows/publish_testpypi.yml`) can be triggered
+  manually from the Actions tab to publish a pre-release; it needs a
+  `TESTPYPI_API_KEY` secret.
+
+To cut a release:
+
+```bash
+poetry version <major|minor|patch>       # bump the version in pyproject.toml
+git commit -am "chore: release vX.Y.Z"
+git tag vX.Y.Z && git push --tags
+gh release create vX.Y.Z --generate-notes # publishing the release runs the workflow
 ```
 
 ## A note on 2.0

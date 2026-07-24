@@ -49,7 +49,11 @@ def friendly_message(error: dict, column: Optional[ColumnSpec]) -> str:
     if validator == "enum":
         allowed = list(column.enum) if column and column.enum else error.get("validator_value", [])
         shown = ", ".join(map(str, allowed[:6]))
-        more = "" if len(allowed) <= 6 else f", ... ({len(allowed) - 6} more — see the Dictionary sheet)"
+        more = (
+            ""
+            if len(allowed) <= 6
+            else f", ... ({len(allowed) - 6} more — see the Dictionary sheet)"
+        )
         return f"This value isn't one of the allowed values. Pick one of: {shown}{more}."
 
     if validator == "required":

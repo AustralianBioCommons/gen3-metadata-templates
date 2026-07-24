@@ -14,11 +14,11 @@ class Finding:
 
     node: str
     sheet: str
-    message: str                    # friendly, user-facing
-    raw_message: str                # original engine message (shown with --verbose)
-    validator: str                  # "type", "enum", "required", "link", "duplicate", ...
+    message: str  # friendly, user-facing
+    raw_message: str  # original engine message (shown with --verbose)
+    validator: str  # "type", "enum", "required", "link", "duplicate", ...
     cell: Optional[CellRef] = None  # exact cell, when known
-    header: Optional[str] = None    # the column header, when known
+    header: Optional[str] = None  # the column header, when known
 
     @property
     def location(self) -> str:
@@ -33,7 +33,9 @@ class ValidationReport:
 
     findings: List[Finding] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    node_counts: Dict[str, Tuple[int, int]] = field(default_factory=dict)  # node -> (records, findings)
+    node_counts: Dict[str, Tuple[int, int]] = field(
+        default_factory=dict
+    )  # node -> (records, findings)
 
     @property
     def ok(self) -> bool:
@@ -83,8 +85,7 @@ def render_console(report: ValidationReport, console, verbose: bool = False) -> 
         sheets = len({f.sheet for f in report.findings})
         console.print(
             Panel.fit(
-                f"[bold red]{total} problem(s)[/] across {sheets} sheet(s) "
-                f"in {records} record(s).",
+                f"[bold red]{total} problem(s)[/] across {sheets} sheet(s) in {records} record(s).",
                 border_style="red",
             )
         )

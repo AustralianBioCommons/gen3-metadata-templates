@@ -24,7 +24,9 @@ from gen3_metadata_templates.schema import SchemaBundle
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 MINI_SCHEMA_PATH = FIXTURE_DIR / "mini_schema.json"
-ACDC_SCHEMA_PATH = Path(__file__).parent.parent / "examples" / "schema" / "json" / "acdc_schema.json"
+ACDC_SCHEMA_PATH = (
+    Path(__file__).parent.parent / "examples" / "schema" / "json" / "acdc_schema.json"
+)
 
 
 @pytest.fixture(scope="session")

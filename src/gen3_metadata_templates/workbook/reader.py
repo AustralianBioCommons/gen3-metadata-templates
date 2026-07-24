@@ -32,7 +32,7 @@ class CellRef:
     """A single cell location, for pointing a user at exactly where to fix."""
 
     sheet: str
-    row: int              # 1-indexed Excel row
+    row: int  # 1-indexed Excel row
     column_letter: str
 
     @property

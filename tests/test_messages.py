@@ -15,8 +15,11 @@ from gen3_metadata_templates.validation.messages import friendly_message
 
 def _col(**kwargs):
     base = dict(
-        header="age", prop_name="age", kind=ColumnKind.PROPERTY,
-        data_type="integer", required=False,
+        header="age",
+        prop_name="age",
+        kind=ColumnKind.PROPERTY,
+        data_type="integer",
+        required=False,
     )
     base.update(kwargs)
     return ColumnSpec(**base)
@@ -41,8 +44,7 @@ def test_enum_error_lists_allowed_values():
         "validator_value": ["Male", "Female", "Unknown"],
         "validation_error": "'Alien' is not one of ['Male', 'Female', 'Unknown']",
     }
-    col = _col(header="sex", prop_name="sex", data_type="enum",
-               enum=("Male", "Female", "Unknown"))
+    col = _col(header="sex", prop_name="sex", data_type="enum", enum=("Male", "Female", "Unknown"))
     msg = friendly_message(error, col)
     assert "Male" in msg and "Female" in msg
 
@@ -65,8 +67,9 @@ def test_pattern_error_shows_the_format():
         "validator": "pattern",
         "validation_error": "'C1' does not match '^C[0-9]{3}$'",
     }
-    col = _col(header="consent_code", prop_name="consent_code",
-               data_type="string", pattern="^C[0-9]{3}$")
+    col = _col(
+        header="consent_code", prop_name="consent_code", data_type="string", pattern="^C[0-9]{3}$"
+    )
     msg = friendly_message(error, col)
     assert "^C[0-9]{3}$" in msg
 

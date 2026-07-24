@@ -65,9 +65,7 @@ def test_subgroup_link_becomes_a_column(mini_bundle):
     the sample->assay_file path must include that FK column; the old code
     crashed here.
     """
-    spec = build_template_spec(
-        mini_bundle, "assay_file", ["subject", "sample", "assay_file"]
-    )
+    spec = build_template_spec(mini_bundle, "assay_file", ["subject", "sample", "assay_file"])
     assay = spec.node_template("assay_file")
     assert assay.column_by_header("sample.submitter_id") is not None
 

@@ -37,9 +37,7 @@ class AmbiguousPathError(G3mtError):
     def __init__(self, target_node: str, paths: List[List[str]]):
         self.target_node = target_node
         self.paths = paths
-        joined = "\n".join(
-            f"  {i}. {' -> '.join(p)}" for i, p in enumerate(paths, start=1)
-        )
+        joined = "\n".join(f"  {i}. {' -> '.join(p)}" for i, p in enumerate(paths, start=1))
         super().__init__(
             f"Node '{target_node}' is reachable by {len(paths)} paths:\n{joined}\n"
             f"Re-run with --path N (or a comma-separated node list) to choose one."

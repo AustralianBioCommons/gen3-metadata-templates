@@ -26,8 +26,8 @@ from gen3_metadata_templates.workbook.naming import fk_header, sheet_names
 class ColumnKind(str, Enum):
     """What role a column plays, which decides how it is written and read."""
 
-    PK = "pk"          # this node's own submitter_id
-    LINK = "link"      # a foreign key to a parent node's submitter_id
+    PK = "pk"  # this node's own submitter_id
+    LINK = "link"  # a foreign key to a parent node's submitter_id
     PROPERTY = "property"
 
 
@@ -77,8 +77,8 @@ class TemplateSpec:
 
     schema_path: str
     target_node: str
-    path: List[str]              # chosen path (may include excluded nodes, for display)
-    nodes: List[NodeTemplate]    # in path order, excluded nodes removed
+    path: List[str]  # chosen path (may include excluded nodes, for display)
+    nodes: List[NodeTemplate]  # in path order, excluded nodes removed
 
     def node_template(self, node: str) -> Optional[NodeTemplate]:
         return next((n for n in self.nodes if n.node == node), None)
@@ -245,9 +245,7 @@ def build_template_spec(
         plain_props = [
             name
             for name in properties
-            if name != PRIMARY_KEY
-            and name not in link_names
-            and name not in excluded_col_set
+            if name != PRIMARY_KEY and name not in link_names and name not in excluded_col_set
         ]
         required_plain = sorted(p for p in plain_props if p in required)
         optional_plain = sorted(p for p in plain_props if p not in required)
