@@ -1,0 +1,45 @@
+site_name: gen3-metadata-templates
+site_description: Generate and validate Gen3 metadata submission templates from a Gen3 JSON schema
+repo_url: https://github.com/AustralianBioCommons/gen3-metadata-templates
+repo_name: AustralianBioCommons/gen3-metadata-templates
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+    - toc.integrate
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Concepts: concepts.md
+  - Generating templates: generating-templates.md
+  - Filling in a template: filling-templates.md
+  - Validating: validating.md
+  - CLI reference: cli-reference.md
+  - Library API: library-api.md
+  - Troubleshooting: troubleshooting.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
