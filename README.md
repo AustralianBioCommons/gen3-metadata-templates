@@ -8,6 +8,24 @@ Turn a Gen3 schema into friendly Excel submission templates, then validate the
 filled-in workbooks — with every error pinned to the exact sheet, row, and
 column, in plain English.
 
+## Documentation
+
+- **[Quickstart](docs/quickstart.md)** — the shortest path from a schema to a
+  validated workbook.
+- **[Concepts](docs/concepts.md)** — nodes, links, paths, and `submitter_id`, for
+  readers new to Gen3.
+- **[Generating templates](docs/generating-templates.md)** — path selection,
+  node/column filtering, and what every part of the workbook means.
+- **[Filling in a template](docs/filling-templates.md)** — how linking,
+  one-to-many, and multi-value cells work.
+- **[Validating](docs/validating.md)** — the error types, the annotated copy,
+  and exit codes.
+- **[CLI reference](docs/cli-reference.md)** — every command and flag.
+- **[Library API](docs/library-api.md)** — using the core from Python.
+- **[Troubleshooting](docs/troubleshooting.md)** — common problems and fixes.
+
+## Install
+
 ```bash
 pipx install gen3-metadata-templates      # installs the `g3mt` command
 
@@ -59,22 +77,6 @@ discovered late, as opaque errors.
   for non-developers, with an optional highlighted copy of your file.
 - **Use it as a CLI or a Python library** — the CLI is a thin shell over an
   importable core.
-
-## Documentation
-
-- **[Quickstart](docs/quickstart.md)** — the shortest path from a schema to a
-  validated workbook.
-- **[Concepts](docs/concepts.md)** — nodes, links, paths, and `submitter_id`, for
-  readers new to Gen3.
-- **[Generating templates](docs/generating-templates.md)** — path selection,
-  node/column filtering, and what every part of the workbook means.
-- **[Filling in a template](docs/filling-templates.md)** — how linking,
-  one-to-many, and multi-value cells work.
-- **[Validating](docs/validating.md)** — the error types, the annotated copy,
-  and exit codes.
-- **[CLI reference](docs/cli-reference.md)** — every command and flag.
-- **[Library API](docs/library-api.md)** — using the core from Python.
-- **[Troubleshooting](docs/troubleshooting.md)** — common problems and fixes.
 
 ## Requirements
 
