@@ -96,6 +96,31 @@ def test_resolved_unknown_node_raises(mini_bundle):
         mini_bundle.resolved("no_such_node")
 
 
+def test_schema_version_reads_dict_version(mini_bundle):
+    """The dictionary version is read from ``_settings.yaml/_dict_version``.
+
+    Recording which schema version a template came from lets us later warn when
+    someone validates a file against a different version, so reading it must work.
+    """
+    assert mini_bundle.schema_version == "0.1.0"
+
+
+def test_schema_version_is_none_when_not_declared(tmp_path, mini_schema_path):
+    """A bundle that declares no version reports None rather than erroring.
+
+    Not every bundle sets ``_dict_version``; treating "no version" as simply
+    unknown keeps the version-mismatch check optional instead of a hard failure.
+    """
+    import json
+
+    data = json.loads(Path(mini_schema_path).read_text())
+    data["_settings.yaml"].pop("_dict_version", None)
+    unversioned = tmp_path / "unversioned_schema.json"
+    unversioned.write_text(json.dumps(data))
+
+    assert SchemaBundle(str(unversioned)).schema_version is None
+
+
 class _FakeResponse:
     """Minimal stand-in for the object urllib.request.urlopen returns."""
 

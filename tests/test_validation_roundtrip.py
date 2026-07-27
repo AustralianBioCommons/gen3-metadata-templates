@@ -9,6 +9,8 @@ produce precisely the expected findings and nothing spurious.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import openpyxl
 import pytest
 
@@ -128,3 +130,39 @@ def test_annotate_refuses_to_overwrite_input(template_path):
     report = validate_workbook(path, schema)
     with pytest.raises(G3mtError):
         write_annotated_copy(path, report, path)
+
+
+def test_schema_version_mismatch_warns_but_does_not_fail(template_path, tmp_path):
+    """Validating against a different schema version warns, but is not an error.
+
+    A template records the dictionary version it was built from. If someone later
+    validates it against a bumped schema, they should be told (so they can
+    regenerate) — but the file can still be structurally valid, so it's a warning,
+    not a failure.
+    """
+    import json
+
+    path, schema = template_path
+    # Fill the template correctly so there are no real findings.
+    wb = openpyxl.load_workbook(path)
+    _set_row(wb, "subject", 3, submitter_id="subj_1", subject_id="S1", age=42, sex="Male")
+    _set_row(
+        wb,
+        "sample",
+        3,
+        submitter_id="samp_1",
+        **{"subject.submitter_id": "subj_1"},
+        sample_id="X1",
+        sample_type="Blood",
+    )
+    wb.save(path)
+
+    # Build a copy of the schema with a different dictionary version.
+    data = json.loads(Path(schema).read_text())
+    data["_settings.yaml"]["_dict_version"] = "9.9.9"
+    bumped = tmp_path / "bumped_schema.json"
+    bumped.write_text(json.dumps(data))
+
+    report = validate_workbook(path, str(bumped))
+    assert report.ok  # structurally still valid
+    assert any("9.9.9" in w and "0.1.0" in w for w in report.warnings)

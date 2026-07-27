@@ -17,7 +17,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 from gen3_validator.bulk import extract_links
 from gen3_validator.resolve_schema import ResolveSchema
@@ -161,6 +161,17 @@ class SchemaBundle:
 
     def has_node(self, node: str) -> bool:
         return self._strip_yaml(node) in set(self.node_names)
+
+    @property
+    def schema_version(self) -> Optional[str]:
+        """The dictionary version declared in ``_settings.yaml`` (``_dict_version``).
+
+        Returns ``None`` if the bundle doesn't declare one, so callers can treat
+        "no version" as simply unknown rather than an error.
+        """
+        settings = self._resolver.schema.get("_settings.yaml") or {}
+        version = settings.get("_dict_version")
+        return str(version) if version else None
 
     def resolved(self, node: str) -> dict:
         """Return the fully ref-resolved schema for one node.

@@ -305,11 +305,20 @@ def _write_instructions(workbook, spec: TemplateSpec, fmts: dict) -> None:
     sheet.hide_gridlines(2)
     sheet.set_column(0, 0, 100)
     order = " -> ".join(nt.sheet_name for nt in spec.nodes)
+    version_text = spec.schema_version or "not declared in the schema"
     lines = [
         ("How to fill in this template", fmts["title"]),
         ("", fmts["wrap"]),
         (f"This workbook was generated for the '{spec.target_node}' node.", fmts["wrap"]),
         (f"Fill the sheets in this order (parents before children): {order}", fmts["wrap"]),
+        ("", fmts["wrap"]),
+        ("Schema", fmts["subtitle"]),
+        (f"Source: {spec.schema_path}", fmts["wrap"]),
+        (
+            f"Dictionary version: {version_text}. Validate this file against the "
+            f"same schema version it was generated from.",
+            fmts["wrap"],
+        ),
         ("", fmts["wrap"]),
         ("submitter_id", fmts["subtitle"]),
         (
@@ -395,6 +404,8 @@ def _write_meta(workbook, spec: TemplateSpec, fmts: dict, data_rows: int) -> Non
     rows = [
         ("g3mt_version", __version__),
         ("schema_file", Path(spec.schema_path).name),
+        ("schema_source", spec.schema_path),
+        ("schema_version", spec.schema_version or ""),
         ("target_node", spec.target_node),
         ("path", ",".join(spec.path)),
         ("data_rows", str(data_rows)),
