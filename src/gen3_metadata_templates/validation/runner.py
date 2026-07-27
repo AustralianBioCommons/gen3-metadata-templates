@@ -38,8 +38,9 @@ def validate_workbook(
 ) -> ValidationReport:
     """Validate ``workbook_path`` against ``schema_path`` and return a report."""
     bundle = SchemaBundle(schema_path)
+    meta = read_meta(workbook_path)
 
-    path = _recover_path(bundle, workbook_path, path_arg, chooser, excluded_nodes)
+    path = _recover_path(bundle, meta, path_arg, chooser, excluded_nodes)
     spec = build_template_spec(
         bundle,
         path[-1],
@@ -50,6 +51,7 @@ def validate_workbook(
     parsed = read_workbook(workbook_path, spec)
 
     report = ValidationReport(warnings=list(parsed.warnings))
+    _check_schema_version(meta, bundle, report)
     excluded_set = set(excluded_nodes)
 
     for node_template in spec.nodes:
@@ -58,9 +60,29 @@ def validate_workbook(
     return report
 
 
-def _recover_path(bundle, workbook_path, path_arg, chooser, excluded_nodes) -> List[str]:
+def _check_schema_version(meta, bundle, report) -> None:
+    """Warn (don't fail) if the workbook was made from a different schema version.
+
+    The generated template records the dictionary version it came from. If that
+    differs from the schema being validated against, the person is probably using
+    a template from an older/newer dictionary — worth flagging, but not a hard
+    error (the schema check itself still decides validity). A workbook with no
+    recorded version (e.g. made before this feature) is treated as unknown.
+    """
+    if not meta:
+        return
+    recorded = str(meta.get("schema_version") or "").strip()
+    current = bundle.schema_version
+    if recorded and current and recorded != current:
+        report.warnings.append(
+            f"This workbook was generated from schema version '{recorded}', but you "
+            f"are validating against version '{current}'. Regenerate the template if "
+            f"the dictionary has changed."
+        )
+
+
+def _recover_path(bundle, meta, path_arg, chooser, excluded_nodes) -> List[str]:
     """Use the workbook's own metadata to pick the path when possible."""
-    meta = read_meta(workbook_path)
     if meta and meta.get("path"):
         recorded = [n for n in str(meta["path"]).split(",") if n]
         if recorded:

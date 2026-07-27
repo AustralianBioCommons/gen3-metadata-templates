@@ -105,3 +105,28 @@ def test_meta_sheet_records_target_and_path(sample_workbook):
     meta = {ws.cell(r, 1).value: ws.cell(r, 2).value for r in range(1, ws.max_row + 1)}
     assert meta["target_node"] == "sample"
     assert meta["path"] == "subject,visit,sample"
+
+
+def test_meta_sheet_records_schema_version_and_source(sample_workbook):
+    """The workbook records which schema version and source it was generated from.
+
+    This is what lets a person (and the validator) tell which dictionary version
+    a filled template corresponds to, and where the schema came from.
+    """
+    path, spec = sample_workbook
+    wb = openpyxl.load_workbook(path)
+    ws = wb[META_SHEET]
+    meta = {ws.cell(r, 1).value: ws.cell(r, 2).value for r in range(1, ws.max_row + 1)}
+    assert meta["schema_version"] == "0.1.0"
+    assert meta["schema_source"] == spec.schema_path
+
+
+def test_instructions_sheet_shows_schema_version(sample_workbook):
+    """A person opening the workbook can see the schema version on the Instructions sheet."""
+    path, _ = sample_workbook
+    wb = openpyxl.load_workbook(path)
+    ws = wb["Instructions"]
+    text = "\n".join(
+        str(ws.cell(r, 1).value) for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value
+    )
+    assert "0.1.0" in text

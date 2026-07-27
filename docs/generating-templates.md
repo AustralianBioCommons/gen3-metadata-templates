@@ -137,6 +137,9 @@ reference actually exists.
 The first tab. A plain-language guide written for *this* template: the fill
 order, what `submitter_id` means, how the link columns work (with a worked
 example), the `;` multi-value rule, and the exact command to validate the file.
+It also shows the **schema source** and the **dictionary version** the template
+was generated from, so you can always tell which schema version a filled file
+corresponds to.
 
 ### Dictionary sheet
 
@@ -145,9 +148,11 @@ sheet, node, column, type, whether it's required, the description, the allowed
 values (for enums), and what it links to.
 
 There are also two hidden sheets (`_g3mt` and `_lists`) that the tool uses to
-record how the workbook was generated and to back long dropdowns. You can ignore
-them; don't delete them, as `validate` reads `_g3mt` to recover the schema and
-path automatically.
+record how the workbook was generated and to back long dropdowns. `_g3mt` stores
+the g3mt version, the schema source and dictionary version, the target node, and
+the node path. You can ignore these sheets; don't delete them, as `validate`
+reads `_g3mt` to recover the schema and path automatically and to check the
+schema version.
 
 ## Next
 

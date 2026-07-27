@@ -75,10 +75,11 @@ class NodeTemplate:
 class TemplateSpec:
     """The full plan for a template: which nodes, in what order, with what columns."""
 
-    schema_path: str
+    schema_path: str  # the full source the schema was loaded from (local path or URL)
     target_node: str
     path: List[str]  # chosen path (may include excluded nodes, for display)
     nodes: List[NodeTemplate]  # in path order, excluded nodes removed
+    schema_version: Optional[str] = None  # _dict_version from the schema, if declared
 
     def node_template(self, node: str) -> Optional[NodeTemplate]:
         return next((n for n in self.nodes if n.node == node), None)
@@ -268,4 +269,5 @@ def build_template_spec(
         target_node=target_node,
         path=list(path),
         nodes=node_templates,
+        schema_version=bundle.schema_version,
     )

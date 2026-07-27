@@ -68,6 +68,14 @@ validation): an optional column missing from a sheet, or a link that points at a
 node the workbook doesn't include (so there's nothing to check it against).
 Warnings don't change the exit code.
 
+One warning worth calling out is a **schema-version mismatch**. Each template
+records the dictionary version it was generated from; if you validate it against
+a different version of the schema, `g3mt` warns you (for example: *"This workbook
+was generated from schema version '0.4.7', but you are validating against version
+'0.5.0'"*). The file can still be valid, but it's a strong hint you should
+regenerate the template from the current dictionary. Templates generated before
+this feature carry no recorded version, so the check is simply skipped for them.
+
 ## Getting a highlighted copy
 
 ```bash
