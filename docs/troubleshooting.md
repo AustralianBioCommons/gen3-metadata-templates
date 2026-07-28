@@ -39,11 +39,17 @@ g3mt generate schema.json X --path 2
 In a script with no terminal attached, you must pass `--path` — `g3mt` won't
 guess. See [Choosing a path](generating-templates.md#choosing-a-path).
 
-### "No path leads to 'X'"
+### My template only has one sheet
 
-Either `X` is a root node with no parents, or every route to it runs through a
-node you've excluded. If you excluded a node that's on the only path, bring it
-back with `--include-node`.
+If nothing in the schema links *into* the node you asked for, the template is
+just that one sheet. That happens when:
+
+- the node sits at the top of the graph (a root, such as `subject` once the
+  administrative nodes are excluded) — this is expected and correct; or
+- every route to it runs through a node you excluded. If you excluded a node
+  that's on the only path, bring it back with `--include-node`.
+
+Check what the tool found with `g3mt paths schema.json X`.
 
 ### "<file> already exists"
 

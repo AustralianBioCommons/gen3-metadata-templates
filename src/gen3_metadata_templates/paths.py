@@ -33,7 +33,12 @@ def enumerate_paths(
     are sorted by (length, then node names) so the numbering a user sees is
     stable across runs.
 
-    :raises UnknownNodeError: if the target node is not reachable / not present.
+    A node that nothing links *into* — a graph root such as ``subject``, or a
+    node whose every parent was excluded — yields the single-node path
+    ``[[target_node]]``. That is the honest answer: a template containing just
+    that one sheet.
+
+    :raises UnknownNodeError: if the target node is not present in the schema.
     """
     if not bundle.has_node(target_node):
         raise UnknownNodeError(f"Node '{target_node}' does not exist in the schema.")
@@ -50,12 +55,10 @@ def enumerate_paths(
     paths = [list(info.path) for info in path_infos]
 
     if not paths:
-        # Reachable-as-a-node but no path means it's a root itself (no parents)
-        # or every route was excluded. A single-node "path" is still valid.
-        raise UnknownNodeError(
-            f"No path leads to '{target_node}'. It may be a root node, or its "
-            f"only parents were excluded."
-        )
+        # Nothing links into this node here: it is a graph root, or every route
+        # to it ran through an excluded node. A single-node path is the honest
+        # answer — a template containing just this sheet.
+        return [[target_node]]
 
     paths.sort(key=lambda p: (len(p), p))
     return paths
