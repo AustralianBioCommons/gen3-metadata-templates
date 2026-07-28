@@ -12,12 +12,18 @@ from __future__ import annotations
 import openpyxl
 import pytest
 
-from gen3_metadata_templates import build_template_spec, write_template
+from gen3_metadata_templates import (
+    build_multi_template_spec,
+    build_template_spec,
+    write_template,
+)
 from gen3_metadata_templates.constants import (
+    DEFAULT_EXCLUDED_NODES,
     DICTIONARY_SHEET,
     INSTRUCTIONS_SHEET,
     META_SHEET,
 )
+from gen3_metadata_templates.selection import resolve_selection
 
 
 @pytest.fixture()
@@ -153,3 +159,92 @@ def test_instructions_sheet_shows_schema_version(sample_workbook):
         str(ws.cell(r, 1).value) for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value
     )
     assert "0.1.0" in text
+
+
+# --- multi-node templates -------------------------------------------------
+
+
+@pytest.fixture()
+def clinical_workbook(clinical_hub_bundle, tmp_path):
+    """A multi-node template covering a whole clinical category."""
+    selection = resolve_selection(
+        clinical_hub_bundle,
+        clinical_hub_bundle.nodes_in_category("clinical"),
+        excluded_nodes=DEFAULT_EXCLUDED_NODES,
+        category="clinical",
+    )
+    spec = build_multi_template_spec(clinical_hub_bundle, selection)
+    out = tmp_path / "clinical_template.xlsx"
+    write_template(spec, out, data_rows=20)
+    return out, spec
+
+
+def test_sheet_order_matches_the_resolved_order(clinical_workbook):
+    """Sheets appear in the order the selection resolved, parents first."""
+    path, spec = clinical_workbook
+    names = openpyxl.load_workbook(path).sheetnames
+    node_positions = [names.index(nt.sheet_name) for nt in spec.nodes]
+    assert node_positions == sorted(node_positions)
+    assert names.index("subject") < names.index("clinical_descriptor")
+    assert names.index("clinical_descriptor") < names.index("demographic")
+
+
+def test_instructions_show_an_indented_fill_order(clinical_workbook):
+    """A branching template is drawn as an indented tree, not a single line.
+
+    With several sheets hanging off one parent, `a -> b -> c` would be a lie.
+    Real Excel indentation shows which sheets are siblings and which are nested,
+    so a submitter can see at a glance what depends on what.
+    """
+    path, _ = clinical_workbook
+    ws = openpyxl.load_workbook(path)["Instructions"]
+    indents = {}
+    for row in range(1, ws.max_row + 1):
+        cell = ws.cell(row, 1)
+        if cell.value in ("subject", "clinical_descriptor", "demographic"):
+            indents[cell.value] = int(cell.alignment.indent or 0)
+
+    assert indents["subject"] < indents["clinical_descriptor"] < indents["demographic"]
+
+
+def test_instructions_say_you_need_not_fill_every_sheet(clinical_workbook):
+    """A whole-category template must say that unused sheets can be left empty.
+
+    Asking for every clinical node gives sheets a given study may have no data
+    for. Without this line a researcher may think the submission is incomplete.
+    """
+    path, _ = clinical_workbook
+    ws = openpyxl.load_workbook(path)["Instructions"]
+    text = " ".join(
+        str(ws.cell(r, 1).value) for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value
+    )
+    assert "do not have to fill in every sheet" in text
+
+
+def test_single_target_instructions_keep_the_simple_one_line_order(sample_workbook):
+    """A single-target template keeps its original, simpler wording.
+
+    Most templates cover one straight chain, and an indented tree would be more
+    ceremony than that needs.
+    """
+    path, _ = sample_workbook
+    ws = openpyxl.load_workbook(path)["Instructions"]
+    text = " ".join(
+        str(ws.cell(r, 1).value) for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value
+    )
+    assert "subject -> visit -> sample" in text
+    assert "do not have to fill in every sheet" not in text
+
+
+def test_a_node_named_like_a_guide_sheet_does_not_collide():
+    """A node called 'Dictionary' must not overwrite the real Dictionary sheet.
+
+    Sheet names are assigned from node names, and the workbook reserves four of
+    its own. A collision would silently destroy a guide sheet.
+    """
+    from gen3_metadata_templates.workbook.naming import sheet_names
+
+    mapping = sheet_names(["Dictionary", "Instructions", "subject"])
+    assert mapping["Dictionary"] != "Dictionary"
+    assert mapping["Instructions"] != "Instructions"
+    assert mapping["subject"] == "subject"
