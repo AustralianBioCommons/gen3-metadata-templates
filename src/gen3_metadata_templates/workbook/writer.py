@@ -9,6 +9,7 @@ xlsxwriter API; everything it needs comes from the ColumnSpec model.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -22,6 +23,7 @@ from gen3_metadata_templates.constants import (
     LIST_SPLIT_CHAR,
     LISTS_SHEET,
     MAX_INLINE_LIST_LEN,
+    META_FORMAT,
     META_SHEET,
 )
 from gen3_metadata_templates.model import ColumnKind, ColumnSpec, NodeTemplate, TemplateSpec
@@ -398,7 +400,12 @@ def _write_dictionary(workbook, spec: TemplateSpec, fmts: dict) -> None:
 
 def _write_meta(workbook, spec: TemplateSpec, fmts: dict, data_rows: int) -> None:
     """Hidden sheet recording how the workbook was generated, so validate can
-    recover the schema/target/path automatically."""
+    recover the schema and the sheets it contains automatically.
+
+    ``target_node`` and ``path`` describe only the primary target and are kept
+    so that an older g3mt install can still read a workbook written by this one.
+    ``node_order`` is the authoritative list of sheets for anything newer.
+    """
     sheet = workbook.add_worksheet(META_SHEET)
     sheet.hide()
     rows = [
@@ -406,8 +413,13 @@ def _write_meta(workbook, spec: TemplateSpec, fmts: dict, data_rows: int) -> Non
         ("schema_file", Path(spec.schema_path).name),
         ("schema_source", spec.schema_path),
         ("schema_version", spec.schema_version or ""),
+        ("meta_format", str(META_FORMAT)),
         ("target_node", spec.target_node),
         ("path", ",".join(spec.path)),
+        ("target_nodes", ",".join(spec.target_nodes)),
+        ("node_order", ",".join(spec.node_order)),
+        ("target_paths", json.dumps({t: list(p) for t, p in spec.paths.items()})),
+        ("selection_category", spec.category or ""),
         ("data_rows", str(data_rows)),
     ]
     for row_idx, (key, value) in enumerate(rows):

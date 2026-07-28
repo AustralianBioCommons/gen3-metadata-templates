@@ -161,4 +161,5 @@ def test_read_meta_recovers_target_and_path(filled_workbook):
     path, _ = filled_workbook
     meta = read_meta(path)
     assert meta["target_node"] == "sample"
+    assert meta["node_order"] == "subject,visit,sample"
     assert meta["node_sheets"]["subject"] == "subject"
