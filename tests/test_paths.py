@@ -4,6 +4,10 @@ When a node is reachable by more than one chain of parents, the submitter must
 pick which chain their template covers. These tests verify enumeration is
 complete and deterministic, that a chosen path can be resolved by index or by
 name, and that ambiguity is refused loudly rather than guessed.
+
+They also pin the contract for nodes with *no* parents: enumeration returns a
+single-node path rather than failing, so a root node like ``subject`` can have a
+template of its own.
 """
 
 from __future__ import annotations
@@ -57,6 +61,28 @@ def test_unknown_node_raises(mini_bundle):
     """A target node that isn't in the schema is a typed, user-facing error."""
     with pytest.raises(UnknownNodeError):
         enumerate_paths(mini_bundle, "not_a_node", DEFAULT_EXCLUDED_NODES)
+
+
+def test_root_node_returns_a_single_node_path(mini_bundle):
+    """A node with no parents yields a one-node path instead of failing.
+
+    ``subject`` sits at the top of the graph once the administrative nodes are
+    excluded, so nothing links into it. This used to raise "No path leads to
+    'subject'", which made ``g3mt generate schema.json subject`` impossible and
+    would block any selection (such as a whole category) that includes a root
+    node. A template containing just that one sheet is the correct answer.
+    """
+    assert enumerate_paths(mini_bundle, "subject", DEFAULT_EXCLUDED_NODES) == [["subject"]]
+
+
+def test_node_whose_only_parents_are_excluded_returns_itself(mini_bundle):
+    """Excluding every parent leaves the node itself as the whole path.
+
+    ``sample`` normally hangs off ``subject`` and ``visit``. Exclude both and
+    there is no route left, but the user explicitly asked for ``sample`` — so
+    they should get a single ``sample`` sheet, not an error.
+    """
+    assert enumerate_paths(mini_bundle, "sample", ("subject", "visit")) == [["sample"]]
 
 
 def test_resolve_path_single_candidate_returns_it(mini_bundle):
