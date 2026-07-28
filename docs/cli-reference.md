@@ -35,10 +35,10 @@ A URL is downloaded, used, and discarded; nothing is left on disk.
 
 ## `g3mt generate`
 
-Generate an Excel template for a target node.
+Generate an Excel template, for one node or for many at once.
 
 ```bash
-g3mt generate SCHEMA TARGET_NODE [options]
+g3mt generate SCHEMA [TARGET_NODE] [options]
 ```
 
 **Arguments**
@@ -46,13 +46,23 @@ g3mt generate SCHEMA TARGET_NODE [options]
 | Argument | Description |
 |---|---|
 | `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
-| `TARGET_NODE` | The node you want to submit data for. |
+| `TARGET_NODE` | *Optional.* The node you want to submit data for. Omit it if you use `--category` or `--node`. |
+
+**Node selection**
+
+| Option | Description |
+|---|---|
+| `--category NAME` | Include every node in this schema category (e.g. `--category clinical`). |
+| `--node NAME` | Include this node and its ancestors. Repeatable. |
+
+The positional node, `--category` and `--node` compose; their node sets are
+merged and ordered parents-first.
 
 **Output options**
 
 | Option | Description |
 |---|---|
-| `-o, --output PATH` | Where to write the `.xlsx`. Default: `<target_node>_template.xlsx`. |
+| `-o, --output PATH` | Where to write the `.xlsx`. Default: derived from the selection (see [Generating templates](generating-templates.md#default-output-filename)). |
 | `--rows N` | Blank data rows to provision per sheet. Default: `5000`. |
 | `--force` | Overwrite the output file if it already exists. |
 
@@ -60,8 +70,8 @@ g3mt generate SCHEMA TARGET_NODE [options]
 
 | Option | Description |
 |---|---|
-| `--path TEXT` | Choose among multiple paths: a number (e.g. `2`) or a node chain (e.g. `subject,visit,sample`). |
-| `--list-paths` | Print the numbered paths to the target node and exit. |
+| `--path TEXT` | Choose among multiple paths: a number (e.g. `2`) or a node chain (e.g. `subject,visit,sample`). With several targets, prefix with the node: `--path sample=2`. Repeatable. |
+| `--list-paths` | Print the numbered paths to each selected node and exit. |
 
 **Node & column filters**
 
@@ -75,6 +85,8 @@ g3mt generate SCHEMA TARGET_NODE [options]
 **Examples**
 
 ```bash
+g3mt generate schema.json --category clinical -o clinical_template.xlsx
+g3mt generate schema.json --node subject --node sample
 g3mt generate schema.json sample -o sample_template.xlsx
 g3mt generate schema.json sample --path 2 --exclude-node acknowledgement
 g3mt generate schema.json sample --list-paths
@@ -105,7 +117,7 @@ g3mt validate WORKBOOK --schema SCHEMA [options]
 | `--annotate PATH` | Write a copy of the workbook with problem cells highlighted. |
 | `--json` | Print the report as JSON instead of tables. |
 | `-v, --verbose` | Also show the raw underlying error messages. |
-| `--path TEXT` | Node path, if the workbook has no `g3mt` metadata. |
+| `--path TEXT` | Comma-separated list of the nodes the workbook contains, if it has no `g3mt` metadata. |
 
 **Examples**
 
