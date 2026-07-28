@@ -152,6 +152,8 @@ except G3mtError as exc:
 ```
 
 `SchemaError` (bad/unreadable schema), `UnknownNodeError` (no such target node),
+`UnknownCategoryError` (no node declares that category — the message lists the real
+ones and suggests a close match),
 `AmbiguousPathError` (multiple paths, none chosen), and `WorkbookFormatError`
 (unrecognisable workbook) are the specific subtypes.
 
@@ -161,6 +163,11 @@ except G3mtError as exc:
 bundle = SchemaBundle("schema.json")
 
 bundle.node_names  # sorted list of node ids
+bundle.categories()  # e.g. ["administrative", "clinical", "data_file"]
+bundle.nodes_by_category()  # {"clinical": ["demographic", ...], ...}
+bundle.nodes_in_category("clinical")  # sorted node names; raises UnknownCategoryError
+bundle.category("demographic")  # "clinical", or None
+bundle.uncategorised_nodes()  # nodes that declare no category
 bundle.links("sample")  # list of LinkInfo(name, target_type, multiplicity, required)
 bundle.required_props("sample")
 bundle.resolved("sample")  # the fully ref-resolved node schema dict

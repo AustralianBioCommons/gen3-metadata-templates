@@ -8,6 +8,7 @@ from gen3_metadata_templates.errors import (
     AmbiguousPathError,
     G3mtError,
     SchemaError,
+    UnknownCategoryError,
     UnknownNodeError,
     WorkbookFormatError,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "G3mtError",
     "SchemaError",
     "UnknownNodeError",
+    "UnknownCategoryError",
     "AmbiguousPathError",
     "WorkbookFormatError",
     "SchemaBundle",

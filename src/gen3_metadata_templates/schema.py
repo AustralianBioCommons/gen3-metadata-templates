@@ -17,12 +17,12 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from gen3_validator.bulk import extract_links
 from gen3_validator.resolve_schema import ResolveSchema
 
-from gen3_metadata_templates.errors import SchemaError
+from gen3_metadata_templates.errors import SchemaError, UnknownCategoryError
 
 # How long to wait when downloading a schema from a URL, in seconds.
 _URL_TIMEOUT = 30
@@ -105,6 +105,7 @@ class SchemaBundle:
 
     def __init__(self, schema_path: Union[str, Path]):
         self.schema_path = str(schema_path)
+        self._category_map: Optional[Dict[str, List[str]]] = None
         local_path, is_temp = self._materialise(self.schema_path)
         try:
             self._resolver = ResolveSchema(local_path)
@@ -172,6 +173,63 @@ class SchemaBundle:
         settings = self._resolver.schema.get("_settings.yaml") or {}
         version = settings.get("_dict_version")
         return str(version) if version else None
+
+    # --- categories -------------------------------------------------------
+    #
+    # Gen3 nodes declare a ``category`` ("clinical", "data_file", ...). Grouping
+    # by it is what lets someone ask for "every clinical sheet" without having
+    # to know the individual node names.
+
+    def category(self, node: str) -> Optional[str]:
+        """The node's declared ``category``, or None if it doesn't declare one."""
+        value = self.resolved(node).get("category")
+        return str(value) if value else None
+
+    def _categories(self) -> Dict[str, List[str]]:
+        """Build (once) the category -> sorted node names map."""
+        if self._category_map is None:
+            grouped: Dict[str, List[str]] = {}
+            for node in self.node_names:
+                name = self.category(node)
+                if name:
+                    grouped.setdefault(name, []).append(node)
+            self._category_map = {k: sorted(v) for k, v in grouped.items()}
+        return self._category_map
+
+    def categories(self) -> List[str]:
+        """Every distinct category in the schema, sorted, in the schema's own spelling."""
+        return sorted(self._categories())
+
+    def nodes_by_category(self) -> Dict[str, List[str]]:
+        """Map each category to its sorted node names.
+
+        Nodes that declare no category are omitted; see :meth:`uncategorised_nodes`.
+        """
+        return {name: list(nodes) for name, nodes in sorted(self._categories().items())}
+
+    def uncategorised_nodes(self) -> List[str]:
+        """Sorted nodes that declare no category at all."""
+        return sorted(n for n in self.node_names if not self.category(n))
+
+    def nodes_in_category(self, category: str) -> List[str]:
+        """Sorted node names in ``category``, matched case-insensitively.
+
+        :raises UnknownCategoryError: if no node declares that category. The error
+            lists what is available and suggests a close match for a typo.
+        """
+        wanted = category.strip().lower()
+        grouped = self._categories()
+
+        matches = [name for name in grouped if name.lower() == wanted]
+        if len(matches) > 1:
+            raise SchemaError(
+                f"This schema declares more than one spelling of '{category}': "
+                f"{', '.join(sorted(matches))}. Use the exact spelling you want."
+            )
+        if not matches:
+            counts = {name: len(nodes) for name, nodes in grouped.items()}
+            raise UnknownCategoryError(category, counts)
+        return list(grouped[matches[0]])
 
     def resolved(self, node: str) -> dict:
         """Return the fully ref-resolved schema for one node.

@@ -8,7 +8,8 @@ something I can't work with".
 
 from __future__ import annotations
 
-from typing import List
+import difflib
+from typing import Dict, List
 
 
 class G3mtError(Exception):
@@ -25,6 +26,31 @@ class SchemaError(G3mtError):
 
 class UnknownNodeError(G3mtError):
     """The requested target node does not exist in the schema."""
+
+
+class UnknownCategoryError(G3mtError):
+    """No node in the schema declares the requested category.
+
+    Carries what *is* available so the message can list the real categories and
+    suggest a close match for a typo.
+    """
+
+    def __init__(self, category: str, available: Dict[str, int]):
+        self.category = category
+        self.available = available
+        lines = [f"No nodes have category '{category}'."]
+
+        close = difflib.get_close_matches(category.lower(), list(available), n=1, cutoff=0.6)
+        if close:
+            lines[0] += f" Did you mean '{close[0]}'?"
+
+        if available:
+            listed = ", ".join(f"{name} ({count})" for name, count in sorted(available.items()))
+            lines.append(f"Available categories: {listed}.")
+        else:
+            lines.append("This schema declares no categories at all.")
+        lines.append("Run `g3mt categories <schema>` to see the nodes in each.")
+        super().__init__("\n".join(lines))
 
 
 class AmbiguousPathError(G3mtError):

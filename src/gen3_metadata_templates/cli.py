@@ -266,16 +266,63 @@ def nodes(
         ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
     ),
 ):
-    """List the nodes in a schema, with their links."""
+    """List the nodes in a schema, with their category and links."""
     with _handle_errors():
         bundle = SchemaBundle(schema)
         table = Table(header_style="bold")
         table.add_column("Node")
+        table.add_column("Category")
         table.add_column("Links to")
         for node in bundle.node_names:
             targets = ", ".join(sorted({link.target_type for link in bundle.links(node)}))
-            table.add_row(node, targets or "[dim]-[/]")
+            table.add_row(node, bundle.category(node) or "[dim]-[/]", targets or "[dim]-[/]")
         console.print(table)
+
+
+@app.command()
+def categories(
+    schema: str = typer.Argument(
+        ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
+    ),
+    show_nodes: bool = typer.Option(
+        True, "--nodes/--no-nodes", help="List the node names in each category."
+    ),
+):
+    """List the categories in a schema, with how many nodes each contains.
+
+    A category groups related nodes (for example every clinical node). You can
+    generate a template for a whole category in one command.
+    """
+    with _handle_errors():
+        bundle = SchemaBundle(schema)
+        grouped = bundle.nodes_by_category()
+
+        table = Table(header_style="bold")
+        table.add_column("Category")
+        table.add_column("Nodes", justify="right")
+        if show_nodes:
+            table.add_column("Node names")
+
+        for name, members in grouped.items():
+            row = [name, str(len(members))]
+            if show_nodes:
+                row.append(", ".join(members))
+            table.add_row(*row)
+
+        uncategorised = bundle.uncategorised_nodes()
+        if uncategorised:
+            row = ["[dim](no category)[/]", str(len(uncategorised))]
+            if show_nodes:
+                row.append("[dim]" + ", ".join(uncategorised) + "[/]")
+            table.add_row(*row)
+
+        console.print(table)
+        if grouped:
+            example = "clinical" if "clinical" in grouped else next(iter(grouped))
+            console.print(
+                "\n[dim]Generate a template for a whole category:[/]\n"
+                f"  g3mt generate {schema} --category {example}"
+            )
 
 
 @app.command()

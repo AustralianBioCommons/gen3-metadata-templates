@@ -119,7 +119,7 @@ g3mt validate sample_template.xlsx -s schema.json --json
 
 ## `g3mt nodes`
 
-List the nodes in a schema, with their links.
+List the nodes in a schema, with their category and links.
 
 ```bash
 g3mt nodes SCHEMA
@@ -130,6 +130,41 @@ g3mt nodes SCHEMA
 | Argument | Description |
 |---|---|
 | `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
+
+---
+
+## `g3mt categories`
+
+List the categories in a schema, with how many nodes each contains. A category
+groups related nodes (for example every clinical node), and is the easiest way
+to find what you want without knowing individual node names.
+
+```bash
+g3mt categories SCHEMA [--nodes | --no-nodes]
+```
+
+**Arguments**
+
+| Argument | Description |
+|---|---|
+| `SCHEMA` | Path or `http(s)://` URL to the Gen3 JSON schema bundle. |
+
+**Options**
+
+| Option | Description |
+|---|---|
+| `--nodes` / `--no-nodes` | List the node names in each category. Default: `--nodes`. |
+
+**Example**
+
+```bash
+$ g3mt categories schema.json
+Category               Nodes  Node names
+administrative             6  acknowledgement, core_metadata_collection, ...
+biospecimen                1  sample
+clinical                   8  blood_pressure_test, clinical_descriptor, demographic, ...
+data_file                  8  genomics_file, imaging_file, ...
+```
 
 ---
 
