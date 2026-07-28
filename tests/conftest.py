@@ -12,15 +12,31 @@ specifically to exercise the tricky cases the tool must handle:
   shapes the writer and reader treat specially.
 
 Resolving a schema is not free, so the bundle is resolved once per test session.
+
+This module also forces plain, uncoloured console output for the whole test
+session — see the note by the environment setup below.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
+import os
 
-import pytest
+# Force rich to render without ANSI colour codes BEFORE anything imports the CLI
+# (which builds its Console objects at import time). Developers commonly have
+# FORCE_COLOR set in their shell, which would otherwise make rich emit escape
+# sequences even under Typer's CliRunner — breaking any test that matches on
+# output text or parses --json. CI happens not to set it, so this would fail
+# only on some machines, which is the worst kind of flake.
+os.environ.pop("FORCE_COLOR", None)
+os.environ.pop("CLICOLOR_FORCE", None)
+os.environ["NO_COLOR"] = "1"
+os.environ["TERM"] = "dumb"
 
-from gen3_metadata_templates.schema import SchemaBundle
+from pathlib import Path  # noqa: E402
+
+import pytest  # noqa: E402
+
+from gen3_metadata_templates.schema import SchemaBundle  # noqa: E402
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 MINI_SCHEMA_PATH = FIXTURE_DIR / "mini_schema.json"
