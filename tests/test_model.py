@@ -9,7 +9,14 @@ flags, and the handling of subgroup links and excluded nodes.
 from __future__ import annotations
 
 from gen3_metadata_templates.constants import DEFAULT_EXCLUDED_NODES
-from gen3_metadata_templates.model import ColumnKind, build_template_spec
+from gen3_metadata_templates.model import (
+    ColumnKind,
+    TemplateSpec,
+    build_multi_template_spec,
+    build_spec_for_nodes,
+    build_template_spec,
+)
+from gen3_metadata_templates.selection import resolve_selection
 
 
 def _headers(node_template):
@@ -123,3 +130,83 @@ def test_excluded_columns_are_dropped(mini_bundle):
     assert "type" not in headers
     assert "state" not in headers
     assert "created_datetime" not in headers
+
+
+# --- multi-node templates -------------------------------------------------
+#
+# A template can cover several targets at once (e.g. every clinical node). The
+# sheet order then comes from the resolved selection rather than a single path.
+
+
+def test_multi_target_gives_a_node_an_fk_column_for_every_included_parent(mini_bundle):
+    """A node linked to two parents that are both in the template gets both columns.
+
+    In a union, ``sample`` can be attached to ``subject`` or to ``visit`` and
+    both sheets exist, so the submitter needs a column for each. Required-ness
+    stays per-link, so only the one the schema demands is marked required.
+    """
+    selection = resolve_selection(
+        mini_bundle, ["visit", "sample"], excluded_nodes=DEFAULT_EXCLUDED_NODES
+    )
+    spec = build_multi_template_spec(mini_bundle, selection)
+    sample = spec.node_template("sample")
+
+    headers = _headers(sample)
+    assert headers.index("subject.submitter_id") < headers.index("visit.submitter_id")
+    assert sample.column_by_header("subject.submitter_id").required is True
+    assert sample.column_by_header("visit.submitter_id").required is False
+
+
+def test_multi_target_spec_exposes_targets_paths_and_depth(clinical_hub_bundle):
+    """The spec carries everything needed to explain the template to a user.
+
+    The writer needs ``depth`` to indent the fill-order tree, and the CLI needs
+    the per-target paths to report which route each node was reached by.
+    """
+    selection = resolve_selection(
+        clinical_hub_bundle,
+        clinical_hub_bundle.nodes_in_category("clinical"),
+        excluded_nodes=DEFAULT_EXCLUDED_NODES,
+        category="clinical",
+    )
+    spec = build_multi_template_spec(clinical_hub_bundle, selection)
+
+    assert spec.is_multi_target
+    assert spec.category == "clinical"
+    assert spec.node_order == [
+        "subject",
+        "clinical_descriptor",
+        "blood_pressure_test",
+        "demographic",
+        "medical_history",
+    ]
+    assert spec.depth["demographic"] == 2
+    assert spec.paths["demographic"] == ["subject", "clinical_descriptor", "demographic"]
+
+
+def test_legacy_single_target_construction_fills_the_new_fields(mini_bundle):
+    """A spec built the old way still reports sensible multi-target fields.
+
+    ``TemplateSpec`` is part of the published API, so code that constructs one
+    with just a target and a path must keep working — the newer fields are
+    back-filled rather than left empty.
+    """
+    spec = TemplateSpec(
+        schema_path="schema.json",
+        target_node="sample",
+        path=["subject", "sample"],
+        nodes=[],
+    )
+    assert spec.target_nodes == ["sample"]
+    assert spec.paths == {"sample": ["subject", "sample"]}
+    assert spec.is_multi_target is False
+
+
+def test_build_spec_for_nodes_takes_the_node_list_verbatim(mini_bundle):
+    """The low-level builder neither re-orders nor filters what it is given.
+
+    Validation rebuilds a spec from the node list a workbook recorded, so the
+    builder must reproduce that layout exactly rather than re-deriving its own.
+    """
+    spec = build_spec_for_nodes(mini_bundle, ["sample", "subject"])
+    assert spec.node_order == ["sample", "subject"]

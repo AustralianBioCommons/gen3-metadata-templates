@@ -19,6 +19,8 @@ from gen3_metadata_templates.model import (
     ColumnSpec,
     NodeTemplate,
     TemplateSpec,
+    build_multi_template_spec,
+    build_spec_for_nodes,
     build_template_spec,
 )
 from gen3_metadata_templates.paths import enumerate_paths, resolve_path
@@ -46,6 +48,8 @@ __all__ = [
     "SchemaBundle",
     "LinkInfo",
     "build_template_spec",
+    "build_multi_template_spec",
+    "build_spec_for_nodes",
     "TemplateSpec",
     "NodeTemplate",
     "ColumnSpec",
