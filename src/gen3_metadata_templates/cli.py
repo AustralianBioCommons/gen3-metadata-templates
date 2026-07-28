@@ -420,16 +420,27 @@ def nodes(
         ..., help="Path or http(s):// URL to the Gen3 JSON schema bundle."
     ),
 ):
-    """List the nodes in a schema, with their category and links."""
+    """List the nodes in a schema, grouped by category.
+
+    Rows are ordered by category, then by node name, so related nodes sit
+    together — which is how people actually look for them. Nodes with no
+    category come last.
+    """
     with _handle_errors():
         bundle = SchemaBundle(schema)
         table = Table(header_style="bold")
-        table.add_column("Node")
         table.add_column("Category")
+        table.add_column("Node")
         table.add_column("Links to")
-        for node in bundle.node_names:
+
+        # Sort uncategorised nodes to the bottom rather than under "" at the top.
+        def sort_key(node: str):
+            category = bundle.category(node)
+            return (category is None, category or "", node)
+
+        for node in sorted(bundle.node_names, key=sort_key):
             targets = ", ".join(sorted({link.target_type for link in bundle.links(node)}))
-            table.add_row(node, bundle.category(node) or "[dim]-[/]", targets or "[dim]-[/]")
+            table.add_row(bundle.category(node) or "[dim]-[/]", node, targets or "[dim]-[/]")
         console.print(table)
 
 
