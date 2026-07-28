@@ -61,3 +61,62 @@ def mini_bundle() -> SchemaBundle:
 def acdc_schema_path() -> str:
     """Filesystem path to the real 34-node ACDC schema (integration tests)."""
     return str(ACDC_SCHEMA_PATH)
+
+
+@pytest.fixture(scope="session")
+def acdc_bundle() -> SchemaBundle:
+    """A resolved bundle for the real ACDC schema (resolving it isn't free)."""
+    return SchemaBundle(str(ACDC_SCHEMA_PATH))
+
+
+# --- graph-shape fixtures -------------------------------------------------
+#
+# Real dictionaries are not all shaped alike, and some are malformed. Each of
+# these small bundles exists to prove the node-selection logic copes with one
+# specific shape that the tidy mini schema doesn't cover.
+
+
+@pytest.fixture(scope="session")
+def clinical_hub_bundle() -> SchemaBundle:
+    """The common clinical shape: measurements hang off a hub, hub hangs off subject.
+
+    Mirrors a real Gen3 dictionary — ``subject -> clinical_descriptor ->
+    {blood_pressure_test, demographic, medical_history}``, with every one of
+    those in the ``clinical`` category, plus a ``sample`` node that also hangs
+    off the hub but is ``biospecimen`` (so it must be left out of a clinical
+    selection).
+    """
+    return SchemaBundle(str(FIXTURE_DIR / "clinical_hub_schema.json"))
+
+
+@pytest.fixture(scope="session")
+def clinical_flat_bundle() -> SchemaBundle:
+    """Clinical nodes at *mixed* depths, including a root and a disconnected one.
+
+    Not every dictionary funnels clinical data through one hub. Here one
+    measurement hangs off ``subject`` directly, another sits below a hub, and a
+    third links to nothing at all — so ordering can't assume a uniform shape.
+    """
+    return SchemaBundle(str(FIXTURE_DIR / "clinical_flat_schema.json"))
+
+
+@pytest.fixture(scope="session")
+def ambiguous_bundle() -> SchemaBundle:
+    """Awkward but legal link shapes that make path choice non-obvious.
+
+    Contains a diamond (two routes to ``d`` of *equal* length, forcing a
+    tie-break), a node with two links to the same target type, and an exclusive
+    subgroup whose members can both end up in one template.
+    """
+    return SchemaBundle(str(FIXTURE_DIR / "ambiguous_schema.json"))
+
+
+@pytest.fixture(scope="session")
+def cyclic_bundle() -> SchemaBundle:
+    """A malformed dictionary: a real loop, a self-link, and a healthy branch.
+
+    ``x`` and ``y`` link to each other, ``z`` links to itself, and
+    ``clean_root -> clean_child`` is untouched by either. Proves a broken corner
+    of a schema is reported clearly without breaking the healthy parts.
+    """
+    return SchemaBundle(str(FIXTURE_DIR / "cyclic_schema.json"))

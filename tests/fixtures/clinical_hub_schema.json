@@ -1,0 +1,261 @@
+{
+ "_settings.yaml": {
+  "_dict_version": "1.0.0",
+  "_dict_commit": null
+ },
+ "_terms.yaml": {
+  "id": "_terms"
+ },
+ "_definitions.yaml": {
+  "id": "_definitions",
+  "UUID": {
+   "type": "string",
+   "pattern": "^[a-f0-9-]{36}$"
+  },
+  "foreign_key": {
+   "type": "object",
+   "additionalProperties": true,
+   "properties": {
+    "id": {
+     "$ref": "#/UUID"
+    },
+    "submitter_id": {
+     "type": "string"
+    }
+   }
+  },
+  "to_one": {
+   "anyOf": [
+    {
+     "type": "array",
+     "items": {
+      "$ref": "#/foreign_key",
+      "minItems": 1,
+      "maxItems": 1
+     }
+    },
+    {
+     "$ref": "#/foreign_key"
+    }
+   ]
+  },
+  "ubiquitous_properties": {
+   "type": {
+    "type": "string"
+   },
+   "id": {
+    "$ref": "#/UUID",
+    "systemAlias": "node_id"
+   },
+   "submitter_id": {
+    "type": [
+     "string"
+    ],
+    "description": "Your own unique label for this row."
+   }
+  }
+ },
+ "subject.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "subject",
+  "title": "subject",
+  "type": "object",
+  "category": "clinical",
+  "description": "The subject node.",
+  "submittable": true,
+  "required": [
+   "patient_id",
+   "submitter_id",
+   "type"
+  ],
+  "links": [],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "patient_id": {
+    "type": "string",
+    "description": "The patient_id."
+   }
+  },
+  "additionalProperties": false
+ },
+ "clinical_descriptor.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "clinical_descriptor",
+  "title": "clinical_descriptor",
+  "type": "object",
+  "category": "clinical",
+  "description": "The clinical_descriptor node.",
+  "submittable": true,
+  "required": [
+   "timepoint_label",
+   "submitter_id",
+   "type",
+   "subjects"
+  ],
+  "links": [
+   {
+    "name": "subjects",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "subject",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "timepoint_label": {
+    "type": "string",
+    "description": "The timepoint_label."
+   },
+   "subjects": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "demographic.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "demographic",
+  "title": "demographic",
+  "type": "object",
+  "category": "clinical",
+  "description": "The demographic node.",
+  "submittable": true,
+  "required": [
+   "sex",
+   "submitter_id",
+   "type",
+   "clinical_descriptors"
+  ],
+  "links": [
+   {
+    "name": "clinical_descriptors",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "clinical_descriptor",
+    "multiplicity": "one_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "sex": {
+    "type": "string",
+    "description": "The sex."
+   },
+   "clinical_descriptors": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "blood_pressure_test.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "blood_pressure_test",
+  "title": "blood_pressure_test",
+  "type": "object",
+  "category": "clinical",
+  "description": "The blood_pressure_test node.",
+  "submittable": true,
+  "required": [
+   "bp_systolic",
+   "submitter_id",
+   "type",
+   "clinical_descriptors"
+  ],
+  "links": [
+   {
+    "name": "clinical_descriptors",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "clinical_descriptor",
+    "multiplicity": "one_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "bp_systolic": {
+    "type": "string",
+    "description": "The bp_systolic."
+   },
+   "clinical_descriptors": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "medical_history.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "medical_history",
+  "title": "medical_history",
+  "type": "object",
+  "category": "clinical",
+  "description": "The medical_history node.",
+  "submittable": true,
+  "required": [
+   "condition",
+   "submitter_id",
+   "type",
+   "clinical_descriptors"
+  ],
+  "links": [
+   {
+    "name": "clinical_descriptors",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "clinical_descriptor",
+    "multiplicity": "one_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "condition": {
+    "type": "string",
+    "description": "The condition."
+   },
+   "clinical_descriptors": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "sample.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "sample",
+  "title": "sample",
+  "type": "object",
+  "category": "biospecimen",
+  "description": "The sample node.",
+  "submittable": true,
+  "required": [
+   "sample_type",
+   "submitter_id",
+   "type",
+   "clinical_descriptors"
+  ],
+  "links": [
+   {
+    "name": "clinical_descriptors",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "clinical_descriptor",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "sample_type": {
+    "type": "string",
+    "description": "The sample_type."
+   },
+   "clinical_descriptors": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ }
+}

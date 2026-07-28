@@ -72,3 +72,27 @@ class AmbiguousPathError(G3mtError):
 
 class WorkbookFormatError(G3mtError):
     """The uploaded workbook is not a recognisable g3mt template."""
+
+
+class SelectionError(G3mtError):
+    """The set of nodes to put in a template couldn't be worked out.
+
+    Raised when nothing was selected, or when the request contradicts itself
+    (asking for a node and excluding it in the same command).
+    """
+
+
+class CyclicGraphError(G3mtError):
+    """The selected nodes link to each other in a loop, so they can't be ordered.
+
+    This is a defect in the schema, not a mistake by the person running the
+    command, and the message says so.
+    """
+
+    def __init__(self, nodes: List[str]):
+        self.nodes = list(nodes)
+        super().__init__(
+            f"These nodes link to each other in a loop and cannot be put in a "
+            f"parents-first order: {', '.join(self.nodes)}. This looks like a problem "
+            f"with the schema, not with your command."
+        )

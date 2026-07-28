@@ -1,0 +1,225 @@
+{
+ "_settings.yaml": {
+  "_dict_version": "1.0.0",
+  "_dict_commit": null
+ },
+ "_terms.yaml": {
+  "id": "_terms"
+ },
+ "_definitions.yaml": {
+  "id": "_definitions",
+  "UUID": {
+   "type": "string",
+   "pattern": "^[a-f0-9-]{36}$"
+  },
+  "foreign_key": {
+   "type": "object",
+   "additionalProperties": true,
+   "properties": {
+    "id": {
+     "$ref": "#/UUID"
+    },
+    "submitter_id": {
+     "type": "string"
+    }
+   }
+  },
+  "to_one": {
+   "anyOf": [
+    {
+     "type": "array",
+     "items": {
+      "$ref": "#/foreign_key",
+      "minItems": 1,
+      "maxItems": 1
+     }
+    },
+    {
+     "$ref": "#/foreign_key"
+    }
+   ]
+  },
+  "ubiquitous_properties": {
+   "type": {
+    "type": "string"
+   },
+   "id": {
+    "$ref": "#/UUID",
+    "systemAlias": "node_id"
+   },
+   "submitter_id": {
+    "type": [
+     "string"
+    ],
+    "description": "Your own unique label for this row."
+   }
+  }
+ },
+ "x.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "x",
+  "title": "x",
+  "type": "object",
+  "category": "clinical",
+  "description": "The x node.",
+  "submittable": true,
+  "required": [
+   "x_value",
+   "submitter_id",
+   "type",
+   "ys"
+  ],
+  "links": [
+   {
+    "name": "ys",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "y",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "x_value": {
+    "type": "string",
+    "description": "The x_value."
+   },
+   "ys": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "y.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "y",
+  "title": "y",
+  "type": "object",
+  "category": "clinical",
+  "description": "The y node.",
+  "submittable": true,
+  "required": [
+   "y_value",
+   "submitter_id",
+   "type",
+   "xs"
+  ],
+  "links": [
+   {
+    "name": "xs",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "x",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "y_value": {
+    "type": "string",
+    "description": "The y_value."
+   },
+   "xs": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "z.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "z",
+  "title": "z",
+  "type": "object",
+  "category": "clinical",
+  "description": "The z node.",
+  "submittable": true,
+  "required": [
+   "z_value",
+   "submitter_id",
+   "type",
+   "zs"
+  ],
+  "links": [
+   {
+    "name": "zs",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "z",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "z_value": {
+    "type": "string",
+    "description": "The z_value."
+   },
+   "zs": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "clean_root.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "clean_root",
+  "title": "clean_root",
+  "type": "object",
+  "category": "clinical",
+  "description": "The clean_root node.",
+  "submittable": true,
+  "required": [
+   "root_value",
+   "submitter_id",
+   "type"
+  ],
+  "links": [],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "root_value": {
+    "type": "string",
+    "description": "The root_value."
+   }
+  },
+  "additionalProperties": false
+ },
+ "clean_child.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "clean_child",
+  "title": "clean_child",
+  "type": "object",
+  "category": "clinical",
+  "description": "The clean_child node.",
+  "submittable": true,
+  "required": [
+   "child_value",
+   "submitter_id",
+   "type",
+   "clean_roots"
+  ],
+  "links": [
+   {
+    "name": "clean_roots",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "clean_root",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "child_value": {
+    "type": "string",
+    "description": "The child_value."
+   },
+   "clean_roots": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ }
+}

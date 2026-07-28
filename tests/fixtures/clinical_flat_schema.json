@@ -1,0 +1,212 @@
+{
+ "_settings.yaml": {
+  "_dict_version": "1.0.0",
+  "_dict_commit": null
+ },
+ "_terms.yaml": {
+  "id": "_terms"
+ },
+ "_definitions.yaml": {
+  "id": "_definitions",
+  "UUID": {
+   "type": "string",
+   "pattern": "^[a-f0-9-]{36}$"
+  },
+  "foreign_key": {
+   "type": "object",
+   "additionalProperties": true,
+   "properties": {
+    "id": {
+     "$ref": "#/UUID"
+    },
+    "submitter_id": {
+     "type": "string"
+    }
+   }
+  },
+  "to_one": {
+   "anyOf": [
+    {
+     "type": "array",
+     "items": {
+      "$ref": "#/foreign_key",
+      "minItems": 1,
+      "maxItems": 1
+     }
+    },
+    {
+     "$ref": "#/foreign_key"
+    }
+   ]
+  },
+  "ubiquitous_properties": {
+   "type": {
+    "type": "string"
+   },
+   "id": {
+    "$ref": "#/UUID",
+    "systemAlias": "node_id"
+   },
+   "submitter_id": {
+    "type": [
+     "string"
+    ],
+    "description": "Your own unique label for this row."
+   }
+  }
+ },
+ "subject.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "subject",
+  "title": "subject",
+  "type": "object",
+  "category": "clinical",
+  "description": "The subject node.",
+  "submittable": true,
+  "required": [
+   "patient_id",
+   "submitter_id",
+   "type"
+  ],
+  "links": [],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "patient_id": {
+    "type": "string",
+    "description": "The patient_id."
+   }
+  },
+  "additionalProperties": false
+ },
+ "visit_hub.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "visit_hub",
+  "title": "visit_hub",
+  "type": "object",
+  "category": "clinical",
+  "description": "The visit_hub node.",
+  "submittable": true,
+  "required": [
+   "visit_label",
+   "submitter_id",
+   "type",
+   "subjects"
+  ],
+  "links": [
+   {
+    "name": "subjects",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "subject",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "visit_label": {
+    "type": "string",
+    "description": "The visit_label."
+   },
+   "subjects": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "deep_measure.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "deep_measure",
+  "title": "deep_measure",
+  "type": "object",
+  "category": "clinical",
+  "description": "The deep_measure node.",
+  "submittable": true,
+  "required": [
+   "reading",
+   "submitter_id",
+   "type",
+   "visit_hubs"
+  ],
+  "links": [
+   {
+    "name": "visit_hubs",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "visit_hub",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "reading": {
+    "type": "string",
+    "description": "The reading."
+   },
+   "visit_hubs": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "direct_measure.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "direct_measure",
+  "title": "direct_measure",
+  "type": "object",
+  "category": "clinical",
+  "description": "The direct_measure node.",
+  "submittable": true,
+  "required": [
+   "reading",
+   "submitter_id",
+   "type",
+   "subjects"
+  ],
+  "links": [
+   {
+    "name": "subjects",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "subject",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "reading": {
+    "type": "string",
+    "description": "The reading."
+   },
+   "subjects": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "standalone.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "standalone",
+  "title": "standalone",
+  "type": "object",
+  "category": "clinical",
+  "description": "The standalone node.",
+  "submittable": true,
+  "required": [
+   "note",
+   "submitter_id",
+   "type"
+  ],
+  "links": [],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "note": {
+    "type": "string",
+    "description": "The note."
+   }
+  },
+  "additionalProperties": false
+ }
+}
