@@ -57,6 +57,45 @@ returns a `TemplateSpec`. The `path` is the chosen node path from root to target
 `write_template(spec, output_path, *, data_rows=5000, protect_headers=True)`
 writes the `.xlsx`.
 
+## Selecting several nodes
+
+```python
+from gen3_metadata_templates import (
+    SchemaBundle,
+    build_multi_template_spec,
+    resolve_selection,
+    write_template,
+)
+from gen3_metadata_templates.constants import DEFAULT_EXCLUDED_NODES
+
+bundle = SchemaBundle("schema.json")
+selection = resolve_selection(
+    bundle,
+    bundle.nodes_in_category("clinical"),
+    excluded_nodes=DEFAULT_EXCLUDED_NODES,
+    category="clinical",
+)
+
+selection.nodes  # the union, parents before children
+selection.depth  # node -> level, for rendering a fill-order tree
+selection.skipped  # category members dropped by an exclusion
+for r in selection.ambiguous:
+    print(r.target, "had", len(r.candidates), "paths; used", r.path)
+
+write_template(build_multi_template_spec(bundle, selection), "clinical.xlsx")
+```
+
+`resolve_selection(bundle, targets, *, excluded_nodes=(), path_overrides=None,
+category=None, strict_targets=())` returns a `NodeSelection`. It never prompts:
+each target resolves to its only path, an explicit override, or the shortest,
+and `TargetResolution.had_alternatives` records where a choice existed.
+
+`layered_topological_order(nodes, edges)` is the ordering primitive if you need
+it directly — it returns `(ordered_nodes, depth_by_node)` and raises
+`CyclicGraphError` on a loop.
+
+`build_template_spec` is **unchanged** and remains the single-path entry point.
+
 ## Discover and choose a path
 
 ```python
@@ -154,8 +193,10 @@ except G3mtError as exc:
 `SchemaError` (bad/unreadable schema), `UnknownNodeError` (no such target node),
 `UnknownCategoryError` (no node declares that category — the message lists the real
 ones and suggests a close match),
-`AmbiguousPathError` (multiple paths, none chosen), and `WorkbookFormatError`
-(unrecognisable workbook) are the specific subtypes.
+`AmbiguousPathError` (multiple paths, none chosen), `SelectionError` (nothing
+selected, or a contradictory selection), `CyclicGraphError` (the schema's nodes
+link in a loop), and `WorkbookFormatError` (unrecognisable workbook) are the
+specific subtypes.
 
 ## Inspecting a schema
 

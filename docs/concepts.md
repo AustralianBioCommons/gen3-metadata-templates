@@ -61,6 +61,22 @@ This is how relationships are expressed without any special syntax:
 
 See [Filling in a template](filling-templates.md) for worked examples.
 
+## Categories
+
+Every node declares a **category** — a grouping such as `clinical`,
+`biospecimen`, `data_file` or `administrative`. It's the schema's own label, and
+it's the easiest way to ask for what you want without knowing individual node
+names:
+
+```bash
+g3mt categories schema.json          # what groups exist, and what's in each
+g3mt generate schema.json --category clinical
+```
+
+`clinical` is the one most researchers want. In a typical dictionary it covers
+the participant, the timepoint/visit hub, and every measurement node hanging off
+it — so one command produces the whole set.
+
 ## Paths
 
 Because the schema is a graph, a node can be reachable by more than one chain of
@@ -79,6 +95,23 @@ asks you to choose (or you pass `--path`). List the paths to a node with:
 ```bash
 g3mt paths schema.json sample
 ```
+
+## Templates covering several nodes
+
+A template doesn't have to cover just one target. When you select several nodes
+(with `--category` or repeated `--node`), `g3mt` takes each one's path, merges
+them into a single set, and orders that set **parents before children**. Shared
+ancestors appear once.
+
+The result is a tree rather than a straight line: several sheets can hang off
+the same parent and don't depend on each other. The Instructions sheet draws
+that as an indented list, and sheets at the same indent can be filled in any
+order.
+
+With one target, `g3mt` still asks you to choose an ambiguous path. With several
+it takes the shortest for each and tells you which had alternatives — otherwise
+asking for a category of eight nodes could mean eight questions.
+
 
 ## Excluded nodes
 

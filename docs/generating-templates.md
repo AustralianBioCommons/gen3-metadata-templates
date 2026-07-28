@@ -29,6 +29,40 @@ g3mt generate \
 A URL is downloaded to a temporary file, used, and removed — nothing is left on
 disk. Validate the filled workbook against the same URL later.
 
+## Selecting what goes in the template
+
+There are three ways to say what you want, and they **compose** — you can use
+more than one in the same command.
+
+| Mode | Command | Use when |
+|---|---|---|
+| One node | `g3mt generate schema.json sample` | You want a single node and its ancestors. |
+| A whole category | `g3mt generate schema.json --category clinical` | You want everything of one kind. |
+| Specific nodes | `g3mt generate schema.json --node subject --node sample` | You want an unusual combination. |
+
+```bash
+# a category plus one extra node
+g3mt generate schema.json --category clinical --node imaging_file
+```
+
+When several nodes are selected, `g3mt` merges their paths into one node set,
+orders it parents-first, and reports what it did: the fill order, the path used
+for each target, any target that could have been reached another way, and any
+**required parent that isn't in the template** (which would make the submission
+incomplete — add it with `--include-node`).
+
+Run `g3mt categories schema.json` to see the categories available.
+
+### Default output filename
+
+| Selection | Default file |
+|---|---|
+| One positional node | `<node>_template.xlsx` |
+| `--category NAME` | `<name>_template.xlsx` |
+| One `--node` | `<node>_template.xlsx` |
+| Two or three nodes | `<a>_<b>_template.xlsx` |
+| More than three | `<first>_and_<n>_more_template.xlsx` |
+
 ## Choosing a path
 
 A node can be reachable by more than one chain of parents. When it is, the
@@ -52,6 +86,17 @@ Then choose one. There are three ways:
   shortest path (option 1).
 - **By number.** `--path 2`
 - **By node chain.** `--path subject,visit,sample`
+
+When you select **several** nodes, `--path` has to say which node it applies to,
+and it can be repeated:
+
+```bash
+g3mt generate schema.json --category clinical --path sample=2
+```
+
+In that mode `g3mt` never prompts: it takes the shortest route for each target
+and tells you which ones had alternatives, so a large selection can't turn into
+a series of questions.
 
 ```bash
 g3mt generate schema.json sample --path 2 -o sample_template.xlsx

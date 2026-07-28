@@ -29,6 +29,10 @@ column, in plain English.
 ```bash
 pipx install gen3-metadata-templates      # installs the `g3mt` command
 
+# everything of one kind (e.g. all your clinical data) in one workbook
+g3mt generate schema.json --category clinical -o clinical_template.xlsx
+
+# ...or a single node
 g3mt generate schema.json sample -o sample_template.xlsx
 # ...fill sample_template.xlsx in Excel...
 g3mt validate sample_template.xlsx --schema schema.json --annotate checked.xlsx
@@ -64,13 +68,16 @@ discovered late, as opaque errors.
 
 | | |
 |---|---|
-| **Input (generate)** | A Gen3 JSON schema bundle — a single `.json` file **or an `http(s)://` URL** — plus the name of the node you want to submit. |
+| **Input (generate)** | A Gen3 JSON schema bundle — a single `.json` file **or an `http(s)://` URL** — plus what you want to submit: a node, several nodes, or a whole category. |
 | **Output (generate)** | An `.xlsx` workbook: one sheet per node on the path to your target, with dropdowns, guidance, and reference sheets. |
 | **Input (validate)** | Your filled `.xlsx` workbook + the same schema. |
 | **Output (validate)** | A console report grouped by sheet (and optionally a highlighted copy of the workbook or a JSON report). Exit code `0` = clean, `1` = problems found, `2` = usage error. |
 
 ## Key features
 
+- **Whole-category templates** — `--category clinical` gives a researcher every
+  clinical sheet in one workbook, in the right fill order, without having to know
+  the node names.
 - **One sheet per node, in fill order** — parents before children, so links
   always resolve.
 - **Cross-sheet link dropdowns** — a `subject.submitter_id` column on the sample

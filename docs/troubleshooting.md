@@ -26,6 +26,35 @@ g3mt nodes schema.json
 Node names are case-sensitive and use the schema's own spelling (e.g.
 `unaligned_reads_file`, not `Unaligned Reads File`).
 
+### "Nothing selected"
+
+You ran `generate` without saying what to put in the template. Give a node, or
+select several at once:
+
+```bash
+g3mt generate schema.json subject
+g3mt generate schema.json --category clinical
+g3mt generate schema.json --node subject --node sample
+```
+
+### "No nodes have category 'X'"
+
+The category name doesn't match anything in this schema. The message lists the
+real categories and suggests a close match; `g3mt categories schema.json` shows
+them all with their nodes.
+
+### I used --category and some sheets have no data
+
+That's fine — leave them empty. A category gives you every node of that kind,
+and a given study rarely uses all of them. An empty sheet simply isn't
+submitted.
+
+### My sheet has more parent-link columns than I expected
+
+When a template contains several of a node's possible parents, that node gets a
+column for each so you can link it either way. Only the ones the schema requires
+have dark (required) headers; leave the others blank.
+
 ### "Node 'X' has multiple paths" / it's asking me to choose
 
 The node can be reached by more than one chain of parents, and the template can
@@ -38,6 +67,10 @@ g3mt generate schema.json X --path 2
 
 In a script with no terminal attached, you must pass `--path` — `g3mt` won't
 guess. See [Choosing a path](generating-templates.md#choosing-a-path).
+
+This only happens in single-node mode. With `--category` or `--node`, the
+shortest route is taken automatically and reported, and you can override it with
+`--path NODE=2`.
 
 ### My template only has one sheet
 
@@ -124,6 +157,20 @@ The annotated file is a **review aid** — it highlights the problem cells and
 adds comments, but may not preserve every bit of the original's styling. Keep
 filling in your original workbook; use the annotated copy only to see what to
 fix.
+
+### These nodes link to each other in a loop
+
+The schema itself has a cycle (node A is a parent of B, and B a parent of A), so
+the sheets can't be put in a parents-first order. This is a problem with the
+dictionary, not with your command — report it to whoever maintains the schema.
+
+### My template has a lot of sheets and is slow to open
+
+A whole-category template can be large. Generate fewer blank rows:
+
+```bash
+g3mt generate schema.json --category clinical --rows 500
+```
 
 ## Installing
 
