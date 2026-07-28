@@ -148,3 +148,185 @@ def test_nodes_command_shows_the_category_column(mini_schema_path):
     assert result.exit_code == 0
     assert "Category" in result.output
     assert "biospecimen" in result.output
+
+
+# --- multi-node selection -------------------------------------------------
+#
+# The existing single-target tests above are the backwards-compatibility gate:
+# `g3mt generate schema.json sample` must keep prompting/refusing exactly as it
+# did. These cover the new selection flags.
+
+
+def test_generate_with_category_writes_every_node_in_it(mini_schema_path, tmp_path):
+    """`--category` builds one workbook covering the whole category.
+
+    This is the headline case: a researcher submitting clinical data runs one
+    command instead of hunting for node names and generating several files.
+    """
+    out = tmp_path / "clinical.xlsx"
+    result = runner.invoke(
+        app, ["generate", mini_schema_path, "--category", "clinical", "-o", str(out)]
+    )
+    assert result.exit_code == 0
+    names = openpyxl.load_workbook(out).sheetnames
+    assert "visit" in names  # the clinical node
+    assert "subject" in names  # its ancestor, pulled in automatically
+
+
+def test_generate_with_repeated_node_flags_unions_them(mini_schema_path, tmp_path):
+    """Several --node flags produce one workbook with the union of their paths."""
+    out = tmp_path / "union.xlsx"
+    result = runner.invoke(
+        app,
+        ["generate", mini_schema_path, "--node", "visit", "--node", "sample", "-o", str(out)],
+    )
+    assert result.exit_code == 0
+    names = openpyxl.load_workbook(out).sheetnames
+    assert {"subject", "visit", "sample"}.issubset(set(names))
+
+
+def test_multi_target_never_prompts_or_refuses_on_ambiguity(mini_schema_path, tmp_path):
+    """A multi-node selection resolves ambiguity itself instead of exiting 2.
+
+    ``sample`` has two possible paths. In single-target mode that's an error
+    without --path; in a multi-node selection the shortest is taken and the
+    alternative is reported, so a whole-category run can't be derailed.
+    """
+    out = tmp_path / "amb.xlsx"
+    result = runner.invoke(app, ["generate", mini_schema_path, "--node", "sample", "-o", str(out)])
+    assert result.exit_code == 0
+    assert "--path sample=" in result.output
+
+
+def test_generate_without_any_selection_exits_2(mini_schema_path):
+    """Naming no node at all is a usage error that shows how to fix it."""
+    result = runner.invoke(app, ["generate", mini_schema_path])
+    assert result.exit_code == 2
+    assert "--category" in result.output
+
+
+def test_generate_unknown_category_lists_what_is_available(mini_schema_path):
+    """A wrong category name shows the real ones rather than failing blankly."""
+    result = runner.invoke(app, ["generate", mini_schema_path, "--category", "nonsense"])
+    assert result.exit_code == 2
+    assert "clinical" in result.output
+
+
+def test_generate_explicit_node_that_is_also_excluded_exits_2(mini_schema_path, tmp_path):
+    """Asking for a node and excluding it in the same command is contradictory."""
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            mini_schema_path,
+            "--node",
+            "sample",
+            "--exclude-node",
+            "sample",
+            "-o",
+            str(tmp_path / "x.xlsx"),
+        ],
+    )
+    assert result.exit_code == 2
+
+
+def test_category_member_excluded_is_skipped_with_a_note(mini_schema_path, tmp_path):
+    """Excluding one member of a category trims it and says so."""
+    out = tmp_path / "trimmed.xlsx"
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            mini_schema_path,
+            "--category",
+            "clinical",
+            "--exclude-node",
+            "visit",
+            "-o",
+            str(out),
+        ],
+    )
+    # Every clinical node was excluded, so there is nothing left to generate.
+    assert result.exit_code == 2
+    assert "clinical" in result.output
+
+
+def test_path_override_for_one_target_of_several(mini_schema_path, tmp_path):
+    """`--path node=N` picks a route for one target without affecting the others."""
+    out = tmp_path / "override.xlsx"
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            mini_schema_path,
+            "--node",
+            "sample",
+            "--path",
+            "sample=2",
+            "-o",
+            str(out),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "visit" in openpyxl.load_workbook(out).sheetnames
+
+
+def test_bare_path_with_multiple_targets_exits_2(mini_schema_path, tmp_path):
+    """A bare --path is ambiguous when several nodes were selected."""
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            mini_schema_path,
+            "--node",
+            "sample",
+            "--node",
+            "visit",
+            "--path",
+            "2",
+            "-o",
+            str(tmp_path / "x.xlsx"),
+        ],
+    )
+    assert result.exit_code == 2
+    assert "--path" in result.output
+
+
+def test_default_output_name_for_a_category(mini_schema_path, tmp_path, monkeypatch):
+    """A category selection names the file after the category."""
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["generate", mini_schema_path, "--category", "clinical"])
+    assert result.exit_code == 0
+    assert (tmp_path / "clinical_template.xlsx").exists()
+
+
+def test_default_output_name_for_the_positional_form_is_unchanged(
+    mini_schema_path, tmp_path, monkeypatch
+):
+    """The original single-target filename convention still applies."""
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["generate", mini_schema_path, "visit"])
+    assert result.exit_code == 0
+    assert (tmp_path / "visit_template.xlsx").exists()
+
+
+def test_list_paths_with_multiple_targets_groups_by_node(mini_schema_path):
+    """`--list-paths` groups the options under each selected node."""
+    result = runner.invoke(
+        app,
+        ["generate", mini_schema_path, "--node", "sample", "--node", "visit", "--list-paths"],
+    )
+    assert result.exit_code == 0
+    assert "sample" in result.output and "visit" in result.output
+
+
+def test_generate_category_then_validate_exits_zero(mini_schema_path, tmp_path):
+    """The whole journey works: select a category, generate, validate clean."""
+    out = tmp_path / "journey.xlsx"
+    generated = runner.invoke(
+        app, ["generate", mini_schema_path, "--category", "clinical", "-o", str(out)]
+    )
+    assert generated.exit_code == 0
+
+    validated = runner.invoke(app, ["validate", str(out), "-s", mini_schema_path])
+    assert validated.exit_code == 0
