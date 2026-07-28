@@ -14,7 +14,14 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from gen3_metadata_templates import build_template_spec, validate_workbook, write_template
+from gen3_metadata_templates import (
+    build_multi_template_spec,
+    build_template_spec,
+    validate_workbook,
+    write_template,
+)
+from gen3_metadata_templates.constants import DEFAULT_EXCLUDED_NODES
+from gen3_metadata_templates.selection import resolve_selection
 from gen3_metadata_templates.workbook.annotate import write_annotated_copy
 
 
@@ -166,3 +173,175 @@ def test_schema_version_mismatch_warns_but_does_not_fail(template_path, tmp_path
     report = validate_workbook(path, str(bumped))
     assert report.ok  # structurally still valid
     assert any("9.9.9" in w and "0.1.0" in w for w in report.warnings)
+
+
+# --- multi-node templates -------------------------------------------------
+
+
+def _generate_clinical(bundle, tmp_path, name="clinical.xlsx"):
+    """Generate a whole-category clinical template and return (path, schema)."""
+    selection = resolve_selection(
+        bundle,
+        bundle.nodes_in_category("clinical"),
+        excluded_nodes=DEFAULT_EXCLUDED_NODES,
+        category="clinical",
+    )
+    spec = build_multi_template_spec(bundle, selection)
+    out = tmp_path / name
+    write_template(spec, out, data_rows=20)
+    return out, str(bundle.schema_path)
+
+
+def test_multi_target_clinical_roundtrip(clinical_hub_bundle, tmp_path):
+    """The researcher's whole journey: one command, fill it in, validate clean.
+
+    This mirrors real clinical data: one participant seen at two timepoints, with
+    a measurement recorded at each. Two ``clinical_descriptor`` rows share the
+    same ``subject.submitter_id`` — that reuse *is* the one-to-many relationship,
+    and it must validate without complaint.
+    """
+    path, schema = _generate_clinical(clinical_hub_bundle, tmp_path)
+    wb = openpyxl.load_workbook(path)
+    _set_row(wb, "subject", 3, submitter_id="subj_1", patient_id="P01")
+    _set_row(
+        wb,
+        "clinical_descriptor",
+        3,
+        submitter_id="cd_1",
+        **{"subject.submitter_id": "subj_1"},
+        timepoint_label="baseline",
+    )
+    _set_row(
+        wb,
+        "clinical_descriptor",
+        4,
+        submitter_id="cd_2",
+        **{"subject.submitter_id": "subj_1"},
+        timepoint_label="year_2",
+    )
+    _set_row(
+        wb,
+        "demographic",
+        3,
+        submitter_id="demo_1",
+        **{"clinical_descriptor.submitter_id": "cd_1"},
+        sex="Male",
+    )
+    _set_row(
+        wb,
+        "demographic",
+        4,
+        submitter_id="demo_2",
+        **{"clinical_descriptor.submitter_id": "cd_2"},
+        sex="Male",
+    )
+    wb.save(path)
+
+    report = validate_workbook(path, schema)
+    assert report.ok, [f"{f.location}: {f.message}" for f in report.findings]
+
+
+def test_multi_target_roundtrip_reports_a_dangling_link(clinical_hub_bundle, tmp_path):
+    """A measurement pointing at a timepoint that doesn't exist is caught.
+
+    Across many sheets it's easy to mistype a parent id. The error must name the
+    exact cell so the fix is obvious.
+    """
+    path, schema = _generate_clinical(clinical_hub_bundle, tmp_path)
+    wb = openpyxl.load_workbook(path)
+    _set_row(wb, "subject", 3, submitter_id="subj_1", patient_id="P01")
+    _set_row(
+        wb,
+        "clinical_descriptor",
+        3,
+        submitter_id="cd_1",
+        **{"subject.submitter_id": "subj_1"},
+        timepoint_label="baseline",
+    )
+    _set_row(
+        wb,
+        "demographic",
+        3,
+        submitter_id="demo_1",
+        **{"clinical_descriptor.submitter_id": "ghost"},
+        sex="Male",
+    )
+    wb.save(path)
+
+    report = validate_workbook(path, schema)
+    dangling = [f for f in report.findings if f.validator == "link"]
+    assert len(dangling) == 1
+    assert dangling[0].sheet == "demographic"
+    assert dangling[0].cell.a1 == "B3"
+
+
+def test_an_unfilled_sheet_in_a_multi_target_template_is_not_an_error(
+    clinical_hub_bundle, tmp_path
+):
+    """Sheets you have no data for can be left empty.
+
+    Asking for a whole category gives sheets a given study may not use. The
+    Instructions sheet promises those can be left blank, so validation must
+    honour that promise.
+    """
+    path, schema = _generate_clinical(clinical_hub_bundle, tmp_path)
+    wb = openpyxl.load_workbook(path)
+    _set_row(wb, "subject", 3, submitter_id="subj_1", patient_id="P01")
+    _set_row(
+        wb,
+        "clinical_descriptor",
+        3,
+        submitter_id="cd_1",
+        **{"subject.submitter_id": "subj_1"},
+        timepoint_label="baseline",
+    )
+    wb.save(path)  # demographic, blood_pressure_test, medical_history all left empty
+
+    report = validate_workbook(path, schema)
+    assert report.ok, [f"{f.location}: {f.message}" for f in report.findings]
+
+
+def test_branching_multi_target_roundtrip(mini_bundle, tmp_path):
+    """A node with two parents in the template gets a column for each.
+
+    Selecting both ``visit`` and ``assay_file`` pulls ``sample`` in with two
+    possible parents. Only the one the schema requires is mandatory, so filling
+    just that one must validate cleanly.
+    """
+    selection = resolve_selection(
+        mini_bundle, ["visit", "assay_file"], excluded_nodes=DEFAULT_EXCLUDED_NODES
+    )
+    spec = build_multi_template_spec(mini_bundle, selection)
+    out = tmp_path / "branching.xlsx"
+    write_template(spec, out, data_rows=20)
+
+    sample = spec.node_template("sample")
+    assert sample.column_by_header("subject.submitter_id").required is True
+    assert sample.column_by_header("visit.submitter_id").required is False
+
+    wb = openpyxl.load_workbook(out)
+    _set_row(wb, "subject", 3, submitter_id="subj_1", subject_id="S1")
+    _set_row(
+        wb, "visit", 3, submitter_id="v_1", **{"subject.submitter_id": "subj_1"}, visit_id="V1"
+    )
+    _set_row(
+        wb,
+        "sample",
+        3,
+        submitter_id="samp_1",
+        **{"subject.submitter_id": "subj_1"},
+        sample_id="X1",
+        sample_type="Blood",
+    )
+    _set_row(
+        wb,
+        "assay_file",
+        3,
+        submitter_id="af_1",
+        **{"sample.submitter_id": "samp_1"},
+        file_name="reads.bam",
+    )
+    wb.save(out)
+
+    report = validate_workbook(out, str(mini_bundle.schema_path))
+    assert report.ok, [f"{f.location}: {f.message}" for f in report.findings]
