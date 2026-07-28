@@ -10,7 +10,11 @@ from __future__ import annotations
 import re
 from typing import Dict, Sequence
 
-from gen3_metadata_templates.constants import MAX_SHEET_NAME_LEN, PRIMARY_KEY
+from gen3_metadata_templates.constants import (
+    MAX_SHEET_NAME_LEN,
+    PRIMARY_KEY,
+    RESERVED_SHEET_NAMES,
+)
 from gen3_metadata_templates.schema import LinkInfo
 
 
@@ -53,8 +57,12 @@ def sheet_names(nodes: Sequence[str]) -> Dict[str, str]:
     Most node names fit as-is. Longer names are truncated and given a numeric
     suffix; collisions (from truncation or otherwise) are broken with an
     incrementing counter so every sheet name stays unique.
+
+    The workbook's own guide sheets are reserved up front, so a node that
+    happens to be called ``Dictionary`` gets a suffixed name instead of
+    colliding with the real Dictionary sheet.
     """
-    used: set = set()
+    used: set = set(RESERVED_SHEET_NAMES)
     mapping: Dict[str, str] = {}
     for node in nodes:
         name = node if len(node) <= MAX_SHEET_NAME_LEN else node[: MAX_SHEET_NAME_LEN - 3] + "~01"

@@ -50,6 +50,9 @@ META_SHEET = "_g3mt"  # hidden machine-readable metadata
 META_FORMAT = 2
 LISTS_SHEET = "_lists"  # hidden backing store for long enum dropdowns
 
+# Sheet names the workbook itself uses; a node must never be given one of these.
+RESERVED_SHEET_NAMES = (INSTRUCTIONS_SHEET, DICTIONARY_SHEET, META_SHEET, LISTS_SHEET)
+
 # Excel caps a worksheet name at 31 characters.
 MAX_SHEET_NAME_LEN = 31
 

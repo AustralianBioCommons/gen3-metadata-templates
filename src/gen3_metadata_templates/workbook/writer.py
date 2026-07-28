@@ -71,7 +71,21 @@ def write_template(
 
 def _build_formats(workbook) -> dict:
     """Create the reusable cell formats once."""
+    # Indent formats are made on demand and cached, so the fill-order tree uses
+    # real Excel indentation (which survives copy/paste and column resizing)
+    # rather than leading spaces. Excel's own indent scale stops at 15.
+    indent_cache: dict = {}
+
+    def indent(level: int):
+        level = max(0, min(int(level), 15))
+        if level not in indent_cache:
+            indent_cache[level] = workbook.add_format(
+                {"indent": level + 1, "text_wrap": True, "valign": "top"}
+            )
+        return indent_cache[level]
+
     return {
+        "indent": indent,
         "header_required": workbook.add_format(
             {
                 "bold": True,
@@ -302,60 +316,113 @@ def _col_letter(index: int) -> str:
     return letters
 
 
+def _fill_order_lines(spec: TemplateSpec, fmts: dict) -> List[tuple]:
+    """The opening block of the Instructions sheet: what's here and in what order.
+
+    A single-target template is a straight chain, so a one-line ``a -> b -> c``
+    says it best. A multi-target template is a tree — several sheets can hang off
+    the same parent and don't depend on each other — so it is drawn indented,
+    with a note that same-level sheets are independent and that a sheet you have
+    no data for can simply be left empty.
+    """
+    if not spec.is_multi_target:
+        order = " -> ".join(nt.sheet_name for nt in spec.nodes)
+        return [
+            (f"This workbook was generated for the '{spec.target_node}' node.", fmts["wrap"]),
+            (f"Fill the sheets in this order (parents before children): {order}", fmts["wrap"]),
+            ("", fmts["wrap"]),
+        ]
+
+    scope = f"{len(spec.nodes)} nodes"
+    if spec.category:
+        scope += f" from the '{spec.category}' category"
+    names = ", ".join(nt.sheet_name for nt in spec.nodes)
+
+    lines: List[tuple] = [
+        (f"This workbook covers {scope}:", fmts["wrap"]),
+        (names, fmts["wrap"]),
+        ("", fmts["wrap"]),
+        (
+            "Fill the sheets in this order — parents before children. Sheets at the "
+            "same indent level do not depend on each other and can be filled in any "
+            "order.",
+            fmts["wrap"],
+        ),
+        ("", fmts["wrap"]),
+    ]
+    for nt in spec.nodes:
+        level = spec.depth.get(nt.node, 0)
+        lines.append((nt.sheet_name, fmts["indent"](level)))
+    lines.extend(
+        [
+            ("", fmts["wrap"]),
+            (
+                "You do not have to fill in every sheet. Fill the ones that apply to "
+                "your data and leave the rest empty — an empty sheet is simply not "
+                "submitted.",
+                fmts["wrap"],
+            ),
+            ("", fmts["wrap"]),
+        ]
+    )
+    return lines
+
+
 def _write_instructions(workbook, spec: TemplateSpec, fmts: dict) -> None:
     sheet = workbook.add_worksheet(INSTRUCTIONS_SHEET)
     sheet.hide_gridlines(2)
     sheet.set_column(0, 0, 100)
-    order = " -> ".join(nt.sheet_name for nt in spec.nodes)
     version_text = spec.schema_version or "not declared in the schema"
     lines = [
         ("How to fill in this template", fmts["title"]),
         ("", fmts["wrap"]),
-        (f"This workbook was generated for the '{spec.target_node}' node.", fmts["wrap"]),
-        (f"Fill the sheets in this order (parents before children): {order}", fmts["wrap"]),
-        ("", fmts["wrap"]),
-        ("Schema", fmts["subtitle"]),
-        (f"Source: {spec.schema_path}", fmts["wrap"]),
-        (
-            f"Dictionary version: {version_text}. Validate this file against the "
-            f"same schema version it was generated from.",
-            fmts["wrap"],
-        ),
-        ("", fmts["wrap"]),
-        ("submitter_id", fmts["subtitle"]),
-        (
-            "On every sheet, 'submitter_id' is your own unique label for each row "
-            "(any text you like, but unique within the sheet).",
-            fmts["wrap"],
-        ),
-        ("", fmts["wrap"]),
-        ("Linking rows to their parent", fmts["subtitle"]),
-        (
-            "A column named like 'subject.submitter_id' links this row to a row on "
-            "the 'subject' sheet. Type (or pick from the dropdown) the submitter_id "
-            "you used on that sheet. To attach several rows to the same parent, "
-            "reuse the same submitter_id — that is how one-to-many relationships "
-            "are expressed.",
-            fmts["wrap"],
-        ),
-        (
-            f"To reference more than one parent in a single cell, separate the "
-            f'submitter_ids with "{LIST_SPLIT_CHAR}".',
-            fmts["wrap"],
-        ),
-        ("", fmts["wrap"]),
-        ("Required vs optional", fmts["subtitle"]),
-        (
-            "Dark blue headers are required; light headers are optional. The grey "
-            "hint row under each header tells you the type and whether it is required.",
-            fmts["wrap"],
-        ),
-        ("", fmts["wrap"]),
-        ("Do not edit the header row or the hint row.", fmts["wrap"]),
-        ("", fmts["wrap"]),
-        ("When you are done, validate your file with:", fmts["subtitle"]),
-        ("    g3mt validate <this_file>.xlsx --schema <schema.json>", fmts["wrap"]),
     ]
+    lines.extend(_fill_order_lines(spec, fmts))
+    lines.extend(
+        [
+            ("Schema", fmts["subtitle"]),
+            (f"Source: {spec.schema_path}", fmts["wrap"]),
+            (
+                f"Dictionary version: {version_text}. Validate this file against the "
+                f"same schema version it was generated from.",
+                fmts["wrap"],
+            ),
+            ("", fmts["wrap"]),
+            ("submitter_id", fmts["subtitle"]),
+            (
+                "On every sheet, 'submitter_id' is your own unique label for each row "
+                "(any text you like, but unique within the sheet).",
+                fmts["wrap"],
+            ),
+            ("", fmts["wrap"]),
+            ("Linking rows to their parent", fmts["subtitle"]),
+            (
+                "A column named like 'subject.submitter_id' links this row to a row on "
+                "the 'subject' sheet. Type (or pick from the dropdown) the submitter_id "
+                "you used on that sheet. To attach several rows to the same parent, "
+                "reuse the same submitter_id — that is how one-to-many relationships "
+                "are expressed.",
+                fmts["wrap"],
+            ),
+            (
+                f"To reference more than one parent in a single cell, separate the "
+                f'submitter_ids with "{LIST_SPLIT_CHAR}".',
+                fmts["wrap"],
+            ),
+            ("", fmts["wrap"]),
+            ("Required vs optional", fmts["subtitle"]),
+            (
+                "Dark blue headers are required; light headers are optional. The grey "
+                "hint row under each header tells you the type and whether it is required.",
+                fmts["wrap"],
+            ),
+            ("", fmts["wrap"]),
+            ("Do not edit the header row or the hint row.", fmts["wrap"]),
+            ("", fmts["wrap"]),
+            ("When you are done, validate your file with:", fmts["subtitle"]),
+            ("    g3mt validate <this_file>.xlsx --schema <schema.json>", fmts["wrap"]),
+        ]
+    )
     for row_idx, (text, fmt) in enumerate(lines):
         sheet.write(row_idx, 0, text, fmt)
 
