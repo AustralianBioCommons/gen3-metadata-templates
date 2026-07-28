@@ -131,7 +131,7 @@ g3mt validate sample_template.xlsx -s schema.json --json
 
 ## `g3mt nodes`
 
-List the nodes in a schema, with their category and links.
+List the nodes in a schema, grouped by category then node name.
 
 ```bash
 g3mt nodes SCHEMA

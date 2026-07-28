@@ -330,3 +330,24 @@ def test_generate_category_then_validate_exits_zero(mini_schema_path, tmp_path):
 
     validated = runner.invoke(app, ["validate", str(out), "-s", mini_schema_path])
     assert validated.exit_code == 0
+
+
+def test_nodes_command_is_ordered_by_category_then_name(mini_schema_path):
+    """`g3mt nodes` groups related nodes together instead of scattering them.
+
+    People scan this table looking for "the clinical ones", so ordering by
+    category first and node name second puts what they want in one block. A
+    plain alphabetical list interleaves unrelated nodes.
+    """
+    result = runner.invoke(app, ["nodes", mini_schema_path])
+    assert result.exit_code == 0
+
+    # Positions of the first node in each category, in the order they appear.
+    order = [
+        result.output.index(name)
+        for name in ("core_metadata_collection", "sample", "visit", "assay_file")
+    ]
+    assert order == sorted(order), "expected administrative, biospecimen, clinical, data_file"
+
+    # Within administrative, node names are alphabetical.
+    assert result.output.index("core_metadata_collection") < result.output.index("program")

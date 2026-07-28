@@ -146,14 +146,18 @@ g3mt nodes schema.json
 ```
 
 ```
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
-┃ Node       ┃ Category    ┃ Links to         ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
-│ subject    │ clinical    │ project          │
-│ sample     │ biospecimen │ subject          │
-│ ...        │ ...         │ ...              │
-└────────────┴─────────────┴──────────────────┘
+┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃ Category    ┃ Node                ┃ Links to            ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ biospecimen │ sample              │ clinical_descriptor │
+│ clinical    │ blood_pressure_test │ clinical_descriptor │
+│ clinical    │ clinical_descriptor │ subject             │
+│ clinical    │ subject             │ project             │
+│ ...         │ ...                 │ ...                 │
+└─────────────┴─────────────────────┴─────────────────────┘
 ```
+
+Rows are grouped by category, so everything of one kind sits together.
 
 ### Check the path to a node
 
