@@ -97,14 +97,37 @@ def test_dictionary_has_one_row_per_column(sample_workbook):
     assert ws.max_row == total_columns + 1  # + header row
 
 
-def test_meta_sheet_records_target_and_path(sample_workbook):
-    """The hidden metadata sheet lets validate recover the schema/target/path."""
+def test_meta_sheet_records_target_path_and_node_order(sample_workbook):
+    """The hidden metadata sheet lets validate recover the sheets a workbook holds.
+
+    ``node_order`` is the authoritative list. ``target_node`` and ``path`` are
+    kept alongside it so that an older g3mt install can still read a workbook
+    written by this one — deleting them would break that.
+    """
     path, _ = sample_workbook
     wb = openpyxl.load_workbook(path)
     ws = wb[META_SHEET]
     meta = {ws.cell(r, 1).value: ws.cell(r, 2).value for r in range(1, ws.max_row + 1)}
     assert meta["target_node"] == "sample"
     assert meta["path"] == "subject,visit,sample"
+    assert meta["node_order"] == "subject,visit,sample"
+    assert meta["target_nodes"] == "sample"
+    assert str(meta["meta_format"]) == "2"
+
+
+def test_meta_sheet_target_paths_round_trip_as_json(sample_workbook):
+    """The per-target paths survive as parseable JSON.
+
+    Node names can contain almost anything, so the per-target paths are stored
+    as JSON rather than a delimited string that could be ambiguous to split.
+    """
+    import json
+
+    path, _ = sample_workbook
+    wb = openpyxl.load_workbook(path)
+    ws = wb[META_SHEET]
+    meta = {ws.cell(r, 1).value: ws.cell(r, 2).value for r in range(1, ws.max_row + 1)}
+    assert json.loads(meta["target_paths"]) == {"sample": ["subject", "visit", "sample"]}
 
 
 def test_meta_sheet_records_schema_version_and_source(sample_workbook):

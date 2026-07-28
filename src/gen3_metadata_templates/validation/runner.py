@@ -8,8 +8,10 @@ back to the cell it came from and rephrased for a non-developer.
 
 from __future__ import annotations
 
+import json
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from gen3_validator.bulk import build_identifier_index, extract_links, validate_record_links
 from gen3_validator.validate import validate_list_dict
@@ -19,7 +21,7 @@ from gen3_metadata_templates.constants import (
     DEFAULT_EXCLUDED_NODES,
     PRIMARY_KEY,
 )
-from gen3_metadata_templates.model import NodeTemplate, build_template_spec
+from gen3_metadata_templates.model import NodeTemplate, build_spec_for_nodes
 from gen3_metadata_templates.paths import Chooser, enumerate_paths, resolve_path
 from gen3_metadata_templates.schema import SchemaBundle
 from gen3_metadata_templates.validation.messages import friendly_message
@@ -40,12 +42,12 @@ def validate_workbook(
     bundle = SchemaBundle(schema_path)
     meta = read_meta(workbook_path)
 
-    path = _recover_path(bundle, meta, path_arg, chooser, excluded_nodes)
-    spec = build_template_spec(
+    layout = _recover_layout(bundle, meta, path_arg, chooser, excluded_nodes)
+    spec = build_spec_for_nodes(
         bundle,
-        path[-1],
-        path,
-        excluded_nodes=excluded_nodes,
+        layout.nodes,
+        target_nodes=layout.target_nodes,
+        paths=layout.paths,
         excluded_columns=excluded_columns,
     )
     parsed = read_workbook(workbook_path, spec)
@@ -81,32 +83,88 @@ def _check_schema_version(meta, bundle, report) -> None:
         )
 
 
-def _recover_path(bundle, meta, path_arg, chooser, excluded_nodes) -> List[str]:
-    """Use the workbook's own metadata to pick the path when possible."""
-    if meta and meta.get("path"):
-        recorded = [n for n in str(meta["path"]).split(",") if n]
-        if recorded:
-            return recorded
-        target = meta.get("target_node")
-    else:
-        target = None
+@dataclass(frozen=True)
+class RecoveredLayout:
+    """Which sheets a workbook contains, and how we worked that out."""
 
-    if target is None:
-        # No usable metadata: fall back to the explicit --path node chain.
-        if path_arg and "," in path_arg:
-            return [n.strip() for n in path_arg.split(",") if n.strip()]
-        raise _needs_target()
+    nodes: List[str]  # ordered node list to rebuild the spec from
+    target_nodes: List[str]
+    paths: Dict[str, List[str]]
+    source: str  # "node_order" | "legacy_path" | "node_sheets" | "enumerated" | "path_arg"
 
-    paths = enumerate_paths(bundle, target, excluded_nodes)
-    return resolve_path(paths, path_arg=path_arg, chooser=chooser)
+
+def _split(value) -> List[str]:
+    return [part.strip() for part in str(value or "").split(",") if part.strip()]
+
+
+def _recover_layout(bundle, meta, path_arg, chooser, excluded_nodes) -> RecoveredLayout:
+    """Work out which sheets the workbook holds, preferring what it recorded.
+
+    A workbook records the exact node list its sheets and columns were built
+    from, so trusting that verbatim is what guarantees validation sees the same
+    layout the writer produced — including nodes brought in with
+    ``--include-node``, which re-filtering would wrongly drop.
+
+    Older workbooks (g3mt 2.2.0 and earlier) recorded only a single
+    ``target_node``/``path``; those are still read exactly as they were before.
+    """
+    meta = meta or {}
+
+    # 1. Current format: the authoritative ordered node list.
+    recorded_order = _split(meta.get("node_order"))
+    if recorded_order:
+        known = [n for n in recorded_order if bundle.has_node(n)]
+        targets = _split(meta.get("target_nodes")) or _split(meta.get("target_node")) or known[-1:]
+        paths: Dict[str, List[str]] = {}
+        try:
+            raw = json.loads(str(meta.get("target_paths") or "{}"))
+            if isinstance(raw, dict):
+                paths = {str(k): [str(n) for n in v] for k, v in raw.items()}
+        except (ValueError, TypeError):
+            paths = {}
+        return RecoveredLayout(known, targets, paths, "node_order")
+
+    # 2. Legacy format (<= 2.2.0): one comma-joined path, filtered by exclusions
+    #    exactly as the old code did.
+    legacy_path = _split(meta.get("path"))
+    if legacy_path:
+        excluded = {n for n in excluded_nodes}
+        nodes = [n for n in legacy_path if n not in excluded]
+        target = str(meta.get("target_node") or "") or (nodes[-1] if nodes else "")
+        return RecoveredLayout(
+            nodes, [target] if target else [], {target: legacy_path}, "legacy_path"
+        )
+
+    # 3. Only the node -> sheet map survived; its keys are in sheet order.
+    node_sheets = meta.get("node_sheets") or {}
+    if node_sheets:
+        nodes = [n for n in node_sheets if bundle.has_node(n)]
+        if nodes:
+            return RecoveredLayout(nodes, nodes[-1:], {}, "node_sheets")
+
+    # 4. Only a target node: work the path out from the schema.
+    target = str(meta.get("target_node") or "")
+    if target:
+        candidates = enumerate_paths(bundle, target, excluded_nodes)
+        chosen = resolve_path(candidates, path_arg=path_arg, chooser=chooser)
+        excluded = {n for n in excluded_nodes}
+        return RecoveredLayout(
+            [n for n in chosen if n not in excluded], [target], {target: chosen}, "enumerated"
+        )
+
+    # 5. No usable metadata at all: the user must say what's in the workbook.
+    if path_arg and "," in path_arg:
+        nodes = _split(path_arg)
+        return RecoveredLayout(nodes, nodes[-1:], {}, "path_arg")
+    raise _needs_target()
 
 
 def _needs_target():
     from gen3_metadata_templates.errors import WorkbookFormatError
 
     return WorkbookFormatError(
-        "This workbook has no g3mt metadata, so the node path can't be recovered. "
-        "Re-run with --path node1,node2,... to say which nodes it contains."
+        "This workbook has no g3mt metadata, so the sheets it contains can't be "
+        "identified. Re-run with --path node1,node2,... to list them."
     )
 
 

@@ -44,6 +44,10 @@ FIRST_DATA_ROW = 3  # first row a submitter types into
 INSTRUCTIONS_SHEET = "Instructions"
 DICTIONARY_SHEET = "Dictionary"
 META_SHEET = "_g3mt"  # hidden machine-readable metadata
+
+# Version of the _g3mt sheet layout. 1 = single target_node/path (g3mt <= 2.2.0);
+# 2 adds node_order/target_nodes/target_paths for multi-node templates.
+META_FORMAT = 2
 LISTS_SHEET = "_lists"  # hidden backing store for long enum dropdowns
 
 # Excel caps a worksheet name at 31 characters.
