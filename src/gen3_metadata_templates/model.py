@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from gen3_metadata_templates.constants import (
     DEFAULT_EXCLUDED_COLUMNS,
@@ -20,6 +20,7 @@ from gen3_metadata_templates.constants import (
     PRIMARY_KEY,
 )
 from gen3_metadata_templates.schema import LinkInfo, SchemaBundle
+from gen3_metadata_templates.selection import NodeSelection
 from gen3_metadata_templates.workbook.naming import fk_header, sheet_names
 
 
@@ -76,10 +77,36 @@ class TemplateSpec:
     """The full plan for a template: which nodes, in what order, with what columns."""
 
     schema_path: str  # the full source the schema was loaded from (local path or URL)
-    target_node: str
-    path: List[str]  # chosen path (may include excluded nodes, for display)
-    nodes: List[NodeTemplate]  # in path order, excluded nodes removed
+    target_node: str  # primary target (target_nodes[0]); kept for the workbook metadata
+    path: List[str]  # the primary target's path; kept for the workbook metadata
+    nodes: List[NodeTemplate]  # parents-first; the authoritative sheet order
     schema_version: Optional[str] = None  # _dict_version from the schema, if declared
+
+    # A template may cover several targets at once (e.g. a whole category).
+    target_nodes: List[str] = field(default_factory=list)
+    paths: Dict[str, List[str]] = field(default_factory=dict)  # target -> path used
+    depth: Dict[str, int] = field(default_factory=dict)  # node -> level, for the fill tree
+    category: Optional[str] = None  # set when a category drove the selection
+
+    def __post_init__(self) -> None:
+        # Allow a single-target construction (the 2.2.0 shape) to produce a
+        # coherent spec without the caller having to fill in the newer fields.
+        if not self.target_nodes:
+            self.target_nodes = [self.target_node]
+        if not self.paths:
+            self.paths = {self.target_node: list(self.path)}
+        if not self.depth:
+            # A single-target spec's nodes form a chain, so position == level.
+            self.depth = {nt.node: i for i, nt in enumerate(self.nodes)}
+
+    @property
+    def node_order(self) -> List[str]:
+        """The sheet order, as node names. Derived from ``nodes`` so it can't drift."""
+        return [nt.node for nt in self.nodes]
+
+    @property
+    def is_multi_target(self) -> bool:
+        return len(self.target_nodes) > 1
 
     def node_template(self, node: str) -> Optional[NodeTemplate]:
         return next((n for n in self.nodes if n.node == node), None)
@@ -151,26 +178,27 @@ def _derive_property_column(prop_name: str, prop: dict, required: bool) -> Colum
 
 def _link_columns(
     links: Sequence[LinkInfo],
-    path_index: Dict[str, int],
+    node_index: Dict[str, int],
     required_props: set,
 ) -> List[ColumnSpec]:
-    """Build ordered ColumnSpecs for a node's links that stay within the path.
+    """Build ordered ColumnSpecs for a node's links that stay within the template.
 
-    Only links whose target appears in the chosen path become columns (a link to
-    an off-path or excluded parent is dropped). Columns are ordered by the
-    parent's position in the path so parents that come first appear first.
+    Only links whose target is one of the template's own nodes become columns (a
+    link to a parent that isn't in the workbook is dropped — there would be no
+    sheet to point at). Columns are ordered by the parent's position in the
+    sheet order, so parents that come first appear first.
     """
-    on_path = [link for link in links if link.target_type in path_index]
+    included = [link for link in links if link.target_type in node_index]
 
     # Detect target-type collisions so headers can be disambiguated.
     target_counts: Dict[str, int] = {}
-    for link in on_path:
+    for link in included:
         target_counts[link.target_type] = target_counts.get(link.target_type, 0) + 1
 
-    on_path.sort(key=lambda link: path_index[link.target_type])
+    included.sort(key=lambda link: node_index[link.target_type])
 
     columns: List[ColumnSpec] = []
-    for link in on_path:
+    for link in included:
         collision = target_counts[link.target_type] > 1
         columns.append(
             ColumnSpec(
@@ -191,26 +219,30 @@ def _link_columns(
     return columns
 
 
-def build_template_spec(
+def build_spec_for_nodes(
     bundle: SchemaBundle,
-    target_node: str,
-    path: Sequence[str],
+    ordered_nodes: Sequence[str],
     *,
-    excluded_nodes: Sequence[str] = DEFAULT_EXCLUDED_NODES,
+    target_nodes: Sequence[str] = (),
+    paths: Optional[Mapping[str, Sequence[str]]] = None,
+    depth: Optional[Mapping[str, int]] = None,
+    category: Optional[str] = None,
     excluded_columns: Sequence[str] = DEFAULT_EXCLUDED_COLUMNS,
 ) -> TemplateSpec:
-    """Assemble the full template plan for a chosen path.
+    """Build a spec from an explicit, already-ordered node list.
 
-    :param path: the chosen node path (root -> target), possibly including
-        excluded nodes for display.
-    :param excluded_nodes: nodes that get no sheet.
+    ``ordered_nodes`` is taken **verbatim**: no exclusion filtering and no
+    re-ordering. This is the single place columns are derived, which is what
+    lets validation rebuild the exact spec a workbook was written from.
+
+    :param target_nodes: the nodes the user actually asked for (the rest are
+        ancestors that came along). Defaults to the last node, matching the
+        single-target case.
     :param excluded_columns: property names stripped from every sheet.
     """
-    excluded_node_set = {n for n in excluded_nodes}
     excluded_col_set = set(excluded_columns)
-
-    included_nodes = [n for n in path if n not in excluded_node_set]
-    path_index = {node: i for i, node in enumerate(included_nodes)}
+    included_nodes = list(ordered_nodes)
+    node_index = {node: i for i, node in enumerate(included_nodes)}
     sheet_map = sheet_names(included_nodes)
 
     node_templates: List[NodeTemplate] = []
@@ -239,8 +271,8 @@ def build_template_spec(
                 )
             )
 
-        # 2. Link (foreign-key) columns, ordered by parent position in the path.
-        columns.extend(_link_columns(links, path_index, required))
+        # 2. Link (foreign-key) columns, ordered by parent position in the sheets.
+        columns.extend(_link_columns(links, node_index, required))
 
         # 3. Remaining properties: required first (alphabetical), then optional.
         plain_props = [
@@ -264,10 +296,75 @@ def build_template_spec(
             )
         )
 
+    targets = [t for t in target_nodes] or ([included_nodes[-1]] if included_nodes else [])
+    path_map = {t: list(p) for t, p in (paths or {}).items()}
+    primary = targets[0] if targets else ""
+
     return TemplateSpec(
         schema_path=bundle.schema_path,
-        target_node=target_node,
-        path=list(path),
+        target_node=primary,
+        path=path_map.get(primary, list(included_nodes)),
         nodes=node_templates,
         schema_version=bundle.schema_version,
+        target_nodes=targets,
+        paths=path_map or {primary: list(included_nodes)},
+        depth=dict(depth) if depth else {},
+        category=category,
+    )
+
+
+def build_template_spec(
+    bundle: SchemaBundle,
+    target_node: str,
+    path: Sequence[str],
+    *,
+    excluded_nodes: Sequence[str] = DEFAULT_EXCLUDED_NODES,
+    excluded_columns: Sequence[str] = DEFAULT_EXCLUDED_COLUMNS,
+) -> TemplateSpec:
+    """Assemble the template plan for one target reached along one path.
+
+    This is the single-path entry point and its behaviour is unchanged: the path
+    is filtered by ``excluded_nodes`` and used as the sheet order.
+
+    :param path: the chosen node path (root -> target), possibly including
+        excluded nodes for display.
+    :param excluded_nodes: nodes that get no sheet.
+    :param excluded_columns: property names stripped from every sheet.
+    """
+    excluded_node_set = {n for n in excluded_nodes}
+    included = [n for n in path if n not in excluded_node_set]
+
+    spec = build_spec_for_nodes(
+        bundle,
+        included,
+        target_nodes=[target_node],
+        paths={target_node: list(path)},
+        excluded_columns=excluded_columns,
+    )
+    # Preserve the caller's target/path verbatim, including any excluded nodes
+    # the path ran through — the workbook metadata records them for display.
+    spec.target_node = target_node
+    spec.path = list(path)
+    return spec
+
+
+def build_multi_template_spec(
+    bundle: SchemaBundle,
+    selection: NodeSelection,
+    *,
+    excluded_columns: Sequence[str] = DEFAULT_EXCLUDED_COLUMNS,
+) -> TemplateSpec:
+    """Assemble the template plan for a resolved multi-node selection.
+
+    The selection has already unioned the targets' ancestor paths, dropped
+    excluded nodes, and ordered the result parents-first, so it is used as-is.
+    """
+    return build_spec_for_nodes(
+        bundle,
+        selection.nodes,
+        target_nodes=selection.targets,
+        paths={r.target: r.path for r in selection.resolutions},
+        depth=selection.depth,
+        category=selection.category,
+        excluded_columns=excluded_columns,
     )
