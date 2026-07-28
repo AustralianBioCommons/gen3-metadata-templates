@@ -1,0 +1,297 @@
+{
+ "_settings.yaml": {
+  "_dict_version": "1.0.0",
+  "_dict_commit": null
+ },
+ "_terms.yaml": {
+  "id": "_terms"
+ },
+ "_definitions.yaml": {
+  "id": "_definitions",
+  "UUID": {
+   "type": "string",
+   "pattern": "^[a-f0-9-]{36}$"
+  },
+  "foreign_key": {
+   "type": "object",
+   "additionalProperties": true,
+   "properties": {
+    "id": {
+     "$ref": "#/UUID"
+    },
+    "submitter_id": {
+     "type": "string"
+    }
+   }
+  },
+  "to_one": {
+   "anyOf": [
+    {
+     "type": "array",
+     "items": {
+      "$ref": "#/foreign_key",
+      "minItems": 1,
+      "maxItems": 1
+     }
+    },
+    {
+     "$ref": "#/foreign_key"
+    }
+   ]
+  },
+  "ubiquitous_properties": {
+   "type": {
+    "type": "string"
+   },
+   "id": {
+    "$ref": "#/UUID",
+    "systemAlias": "node_id"
+   },
+   "submitter_id": {
+    "type": [
+     "string"
+    ],
+    "description": "Your own unique label for this row."
+   }
+  }
+ },
+ "a.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "a",
+  "title": "a",
+  "type": "object",
+  "category": "administrative",
+  "description": "The a node.",
+  "submittable": true,
+  "required": [
+   "code",
+   "submitter_id",
+   "type"
+  ],
+  "links": [],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "code": {
+    "type": "string",
+    "description": "The code."
+   }
+  },
+  "additionalProperties": false
+ },
+ "b.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "b",
+  "title": "b",
+  "type": "object",
+  "category": "clinical",
+  "description": "The b node.",
+  "submittable": true,
+  "required": [
+   "b_value",
+   "submitter_id",
+   "type",
+   "aees"
+  ],
+  "links": [
+   {
+    "name": "aees",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "a",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "b_value": {
+    "type": "string",
+    "description": "The b_value."
+   },
+   "aees": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "c.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "c",
+  "title": "c",
+  "type": "object",
+  "category": "clinical",
+  "description": "The c node.",
+  "submittable": true,
+  "required": [
+   "c_value",
+   "submitter_id",
+   "type",
+   "aees"
+  ],
+  "links": [
+   {
+    "name": "aees",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "a",
+    "multiplicity": "many_to_one",
+    "required": true
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "c_value": {
+    "type": "string",
+    "description": "The c_value."
+   },
+   "aees": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "d.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "d",
+  "title": "d",
+  "type": "object",
+  "category": "clinical",
+  "description": "The d node.",
+  "submittable": true,
+  "required": [
+   "d_value",
+   "submitter_id",
+   "type"
+  ],
+  "links": [
+   {
+    "name": "bees",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "b",
+    "multiplicity": "many_to_one",
+    "required": false
+   },
+   {
+    "name": "cees",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "c",
+    "multiplicity": "many_to_one",
+    "required": false
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "d_value": {
+    "type": "string",
+    "description": "The d_value."
+   },
+   "bees": {
+    "$ref": "_definitions.yaml#/to_one"
+   },
+   "cees": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "dup.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "dup",
+  "title": "dup",
+  "type": "object",
+  "category": "clinical",
+  "description": "The dup node.",
+  "submittable": true,
+  "required": [
+   "dup_value",
+   "submitter_id",
+   "type"
+  ],
+  "links": [
+   {
+    "name": "primary_as",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "a",
+    "multiplicity": "many_to_one",
+    "required": false
+   },
+   {
+    "name": "secondary_as",
+    "backref": "children",
+    "label": "part_of",
+    "target_type": "a",
+    "multiplicity": "many_to_one",
+    "required": false
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "dup_value": {
+    "type": "string",
+    "description": "The dup_value."
+   },
+   "primary_as": {
+    "$ref": "_definitions.yaml#/to_one"
+   },
+   "secondary_as": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ },
+ "grp.yaml": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "grp",
+  "title": "grp",
+  "type": "object",
+  "category": "data_file",
+  "description": "The grp node.",
+  "submittable": true,
+  "required": [
+   "file_name",
+   "submitter_id",
+   "type"
+  ],
+  "links": [
+   {
+    "exclusive": true,
+    "required": true,
+    "subgroup": [
+     {
+      "name": "bees",
+      "backref": "children",
+      "label": "part_of",
+      "target_type": "b",
+      "multiplicity": "many_to_one",
+      "required": false
+     },
+     {
+      "name": "cees",
+      "backref": "children",
+      "label": "part_of",
+      "target_type": "c",
+      "multiplicity": "many_to_one",
+      "required": false
+     }
+    ]
+   }
+  ],
+  "properties": {
+   "$ref": "_definitions.yaml#/ubiquitous_properties",
+   "file_name": {
+    "type": "string",
+    "description": "The file_name."
+   },
+   "bees": {
+    "$ref": "_definitions.yaml#/to_one"
+   },
+   "cees": {
+    "$ref": "_definitions.yaml#/to_one"
+   }
+  },
+  "additionalProperties": false
+ }
+}
