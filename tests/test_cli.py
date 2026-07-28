@@ -120,3 +120,31 @@ def test_debug_flag_shows_traceback(tmp_path):
     result = runner.invoke(app, ["--debug", "nodes", missing])
     assert result.exit_code == 2
     assert "Traceback" in result.output
+
+
+def test_categories_command_lists_categories_with_counts(mini_schema_path):
+    """`g3mt categories` shows what groups of nodes the schema defines.
+
+    This is the discovery step for someone who knows they want "clinical data"
+    but not which node names that involves.
+    """
+    result = runner.invoke(app, ["categories", mini_schema_path])
+    assert result.exit_code == 0
+    assert "clinical" in result.output
+    assert "administrative" in result.output
+
+
+def test_categories_command_can_hide_node_names(mini_schema_path):
+    """`--no-nodes` gives just the counts, for a schema with many nodes."""
+    result = runner.invoke(app, ["categories", mini_schema_path, "--no-nodes"])
+    assert result.exit_code == 0
+    assert "clinical" in result.output
+    assert "assay_file" not in result.output
+
+
+def test_nodes_command_shows_the_category_column(mini_schema_path):
+    """`g3mt nodes` surfaces each node's category alongside its links."""
+    result = runner.invoke(app, ["nodes", mini_schema_path])
+    assert result.exit_code == 0
+    assert "Category" in result.output
+    assert "biospecimen" in result.output

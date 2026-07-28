@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from gen3_metadata_templates.errors import SchemaError
+from gen3_metadata_templates.errors import SchemaError, UnknownCategoryError
 from gen3_metadata_templates.schema import LinkInfo, SchemaBundle
 
 
@@ -189,3 +189,81 @@ def test_url_with_non_json_content_raises_schema_error(monkeypatch):
 
     with pytest.raises(SchemaError):
         SchemaBundle("https://example.com/not-a-schema.html")
+
+
+# --- categories -----------------------------------------------------------
+#
+# Categories are how a researcher asks for "every clinical sheet" without
+# knowing the individual node names, so the grouping has to be exact.
+
+
+def test_category_returns_the_declared_category(mini_bundle):
+    """A node reports the category the schema gives it."""
+    assert mini_bundle.category("visit") == "clinical"
+    assert mini_bundle.category("sample") == "biospecimen"
+
+
+def test_category_is_none_when_the_node_declares_none(mini_bundle, monkeypatch):
+    """A node with no category reports None rather than raising.
+
+    Not every Gen3 dictionary categorises every node. Treating "no category" as
+    simply unknown keeps such a node usable everywhere else in the tool.
+    """
+    original = mini_bundle.resolved
+
+    def without_category(node):
+        data = dict(original(node))
+        if node == "visit":
+            data.pop("category", None)
+        return data
+
+    monkeypatch.setattr(mini_bundle, "resolved", without_category)
+    assert mini_bundle.category("visit") is None
+
+
+def test_nodes_by_category_groups_and_sorts(mini_bundle):
+    """Every node is grouped under its category, with names sorted.
+
+    Sorting matters because this drives both the `g3mt categories` table and the
+    order targets are resolved in, and both must be identical run to run.
+    """
+    assert mini_bundle.nodes_by_category() == {
+        "administrative": ["core_metadata_collection", "program", "project", "subject"],
+        "biospecimen": ["sample"],
+        "clinical": ["visit"],
+        "data_file": ["assay_file"],
+    }
+
+
+def test_nodes_by_category_omits_internal_helpers(mini_bundle):
+    """The schema's internal helper entries are never presented as nodes.
+
+    ``_definitions``/``_terms``/``_settings`` are schema machinery, not things a
+    user submits, so they must not appear in any category listing.
+    """
+    listed = {n for nodes in mini_bundle.nodes_by_category().values() for n in nodes}
+    assert not any(n.startswith("_") for n in listed)
+
+
+def test_nodes_in_category_is_case_insensitive(mini_bundle):
+    """Typing --category Clinical works as well as --category clinical."""
+    assert mini_bundle.nodes_in_category("Clinical") == ["visit"]
+
+
+def test_unknown_category_lists_what_is_available(mini_bundle):
+    """An unknown category names the real ones instead of failing blankly.
+
+    Someone who guesses a category name should be shown the actual options
+    rather than having to go and read the schema.
+    """
+    with pytest.raises(UnknownCategoryError) as exc:
+        mini_bundle.nodes_in_category("not_a_category")
+    message = str(exc.value)
+    assert "clinical" in message and "data_file" in message
+
+
+def test_unknown_category_suggests_a_close_match(mini_bundle):
+    """A near-miss spelling gets a 'did you mean' hint."""
+    with pytest.raises(UnknownCategoryError) as exc:
+        mini_bundle.nodes_in_category("clincal")
+    assert "Did you mean 'clinical'" in str(exc.value)
